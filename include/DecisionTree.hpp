@@ -1,6 +1,9 @@
 #ifndef _DECISIONTREE_HPP_
 #define _DECISIONTREE_HPP_
 
+#include <vector>
+#include <stdexcept>
+
 #include "DecisionNode.hpp"
 
 namespace Kaadugal

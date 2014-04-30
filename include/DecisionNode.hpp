@@ -8,7 +8,7 @@
 namespace Kaadugal
 {
     // Use Variable Prevision Floating point representation
-    typedef VPFloat double; // or float or long double
+    typedef double VPFloat; // or float or long double
     enum NodeType
     {
 	SplitNode,
@@ -41,8 +41,6 @@ namespace Kaadugal
 	{
 	    
 	};
-
-	DecisionNode<T, S, R>&
 
 	void CreateSplitNode(T FeatureResponse, S Statistics, VPFloat Threshold)
 	{
