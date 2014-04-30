@@ -7,9 +7,11 @@ Kaadugal is optimized for performance on multi-core systems with tens
 of processors and a shared memory.
 
 Kaadugal is known to work on multiple platforms including Linux and Windows.
+It uses C++11 features and therefore requires a compiler that supports
+these features.
 
-Kaadugal is the English phoneticization of the word காடுகள் (forests)  in the Tamil
-language.
+Kaadugal is the English phoneticization of the word காடுகள் (forests)
+in the Tamil language.
 
 ------------------------
 INSTALLATION
