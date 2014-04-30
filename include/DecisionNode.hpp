@@ -32,7 +32,7 @@ namespace Kaadugal
 	Kaadugal::NodeType m_Type;
 
     public:
-	DecisionNode(void) // With no arguments, we construct a null node
+	DecisionNode(void) // With no arguments, we construct an invalid node
 	    : m_Threshold(std::numeric_limits<VPFloat>::quiet_NaN())
 	    , m_FeatureResponse(T())
 	    , m_Statistics(S())
@@ -42,7 +42,16 @@ namespace Kaadugal
 	    
 	};
 
-	void CreateSplitNode(T FeatureResponse, S Statistics, VPFloat Threshold)
+	DecisionNode<T, S, R>& operator=(const DecisionNode<T, S, R>& RHS)
+	{
+	    m_Threshold = RHS.m_Threshold;
+	    m_FeatureResponse = RHS.m_FeatureResponse;
+	    m_Statistics = RHS.m_Statistics;
+	    m_Data = RHS.m_Data;
+	    m_Type = RHS.m_Type;
+	};
+
+	void MakeSplitNode(T FeatureResponse, S Statistics, VPFloat Threshold)
 	{
 	    m_Type = Kaadugal::SplitNode;
 	    m_Threshold = Threshold;
@@ -50,7 +59,7 @@ namespace Kaadugal
 	    m_Statistics = Statistics; // Deep copy	    
 	};
 
-	void CreateLeafNode(T FeatureResponse, S Statistics, R Data)
+	void MakeLeafNode(T FeatureResponse, S Statistics, R Data)
 	{
 	    m_Type = Kaadugal::LeafNode;
 	    m_Threshold = std::numeric_limits<VPFloat>::quiet_NaN(); // Leaves don't have thresholds

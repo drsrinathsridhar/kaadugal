@@ -1,5 +1,5 @@
 # About
-------------------------
+
 Kaadugal is a parallelized multi-core C++ implementation of the random forests
 algorithm for classification, regression, and structured prediction problems.
 Kaadugal is optimized for performance on multi-core systems with tens
@@ -13,7 +13,7 @@ Kaadugal is the English phoneticization of the word காடுகள் (fores
 in the Tamil language.
 
 # Installation
-------------------------
+
 Kaadugal is a header only library that can simply be included in your projects.
 The kaadugal/include path should be in your project include path.
 
@@ -42,7 +42,7 @@ Then test the forest on input data using
 ```
 
 # Contact
-------------------------
+
 Srinath Sridhar (srinaths@umich.edu)
 
 Max Planck Institute for Informatics
