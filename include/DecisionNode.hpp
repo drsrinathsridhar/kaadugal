@@ -7,8 +7,8 @@
 
 namespace Kaadugal
 {
-    // Use Variable Prevision Floating point representation
-    typedef double VPFloat; // or float or long double
+    // Use Variable Precision Floating point representation
+    typedef double VPFloat; // Change to float or long double as needed
     enum NodeType
     {
 	SplitNode,

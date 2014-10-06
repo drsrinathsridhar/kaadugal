@@ -23,11 +23,15 @@ namespace Kaadugal
 	    : m_MaxDecisionLevels(MaxDecisionLevels)
 	{
 	    if(MaxDecisionLevels < 0)
-		throw std::runtime_error("DecisionTree::m_MaxDecisionLevels out of bounds.");
+	    {
+		std::cout << "[ WARN ]: Passed negative value for MaxDecisionLevels. Setting to default of 10." << std::endl;
+		MaxDecisionLevels = 10;
+		m_MaxDecisionLevels = MaxDecisionLevels;
+	    }
 
 	    // Following advice from Efficient Implementation of Decision Forests, Shotton et al. 2013
 	    // While allocating for more nodes than needed (in case trees are unbalanced which is bad anyway)
-	    // is wasteful memory-wise. It is efficient for access during testing.
+	    // is wasteful memory-wise, it is efficient for access during testing.
 
 	    // NOTE: Will crash if this exceeds available system memory
 	    m_Nodes.resize( (1 << (MaxDecisionLevels + 1)) - 1 ); // 2^(l+1) - 1
@@ -37,6 +41,7 @@ namespace Kaadugal
 	const DecisionNode<T, S, R>& GetNode(int i) const { return m_Nodes[i]; }; // Read-only
 	DecisionNode<T, S, R>& GetNode(int i) { return m_Nodes[i]; };
 	const int GetNumNodes(void) { return m_Nodes.size(); };
+	const int GetMaxDecisionLevels(void) { return m_MaxDecisionLevels; };
 
 	bool isValid(void)
 	{

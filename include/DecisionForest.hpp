@@ -1,9 +1,6 @@
 #ifndef _DECISIONFOREST_HPP_
 #define _DECISIONFOREST_HPP_
 
-#include "AbstractFeatureResponse.hpp"
-#include "AbstractStatistics.hpp"
-#include "AbstractLeafData.hpp"
 #include "DecisionTree.hpp"
 
 namespace Kaadugal
