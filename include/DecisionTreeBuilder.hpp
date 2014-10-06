@@ -2,6 +2,9 @@
 #define _DECISIONTREEBUILDER_HPP_
 
 #include <memory>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 #include "DecisionTree.hpp"
 #include "AbstractDataSet.hpp"
@@ -15,14 +18,15 @@ namespace Kaadugal
 	BFS,
 	Hybrid
     };
-
+    
     class TreeBuilderParameters
     {
     public:
 	int m_MaxLevels;
 	int m_NumCandidateThresholds;
 	TreeBuildType m_Type;
-
+	bool m_isValid;
+	
 	TreeBuilderParameters(int MaxLevels, int NumCandidateThresholds, TreeBuildType Type = TreeBuildType::DFS)
 	    : m_MaxLevels(MaxLevels)
 	    , m_NumCandidateThresholds(NumCandidateThresholds)
@@ -31,19 +35,84 @@ namespace Kaadugal
 
 	};
 
-	TreeBuilderParameters(const char * ParameterFile)
+	TreeBuilderParameters(const std::string& ParameterFile)
 	{
-
+	    Deserialize(ParameterFile);
 	};
 
-	void Serialize()
+	void Serialize(const std::string& ParameterFile)
 	{
-
+	    // TODO:
 	};
 
-	void Deserialize()
+	void Deserialize(const std::string& ParameterFile)
 	{
+	    std::fstream ParamFile(ParameterFile, std::ios::in);
+	    if(ParamFile.is_open())
+	    {
+		// Read parameters from file
+		m_isValid = true;
+		std::string Line;
+		int ConfigCtr = 0; // Counts how many of the minimum configurations are present. Throw error otherwise.
+		while(std::getline(ParamFile, Line))
+		{
+		    // Skip empty lines or lines beginning with #
+		    if(Line.size() < 1)
+			continue;
+		    if(Line.data()[0] == '#') // Comment lines
+			continue;
 
+		    std::stringstream LineStream(Line);
+		    std::string Token, Key, Value;
+		    bool isKey = false;
+		    while(std::getline(LineStream, Token, ':'))
+		    {
+			Token.erase(0, Token.find_first_not_of(" \t")); // Trim to remove leading spaces
+			if(isKey == false)
+			{
+			    isKey = true;
+			    Key = Token;
+			    continue;
+			}
+			else
+			{
+			    Value = Token;
+			    if(Key == "Type")
+			    {
+				if(Value == "BFS")
+				    m_Type = TreeBuildType::BFS;
+				if(Value == "DFS")
+				    m_Type = TreeBuildType::DFS;
+				if(Value == "Hybrid")
+				    m_Type = TreeBuildType::Hybrid;
+				// std::cout << Value << std::endl;
+			    }
+			    if(Key == "MaxTreeLevels")
+			    {
+				m_MaxLevels = std::atoi(Value.c_str());
+				// std::cout << m_MaxLevels << std::endl;
+			    }
+			    if(Key == "NumCandidateThresh")
+			    {
+				m_NumCandidateThresholds = std::atoi(Value.c_str());
+				// std::cout << m_NumCandidateThresholds << std::endl;
+			    }
+			    isKey = false;
+			    continue;
+			}
+		    }
+		}
+
+		// Print info for debug purposes
+		std::cout << "[ INFO ]: Creating forest with trees with a depth of upto " << m_MaxLevels
+			  << " levels, trained using method " << m_Type << ", and "
+			  << m_NumCandidateThresholds << " candidate thresholds." << std::endl;
+	    }
+	    else
+	    {
+		std::cout << "[ WARN ]: Unable to open parameters file. Please check input." << std::endl;
+		m_isValid = false;
+            }
 	};		
     };
 
@@ -96,12 +165,12 @@ namespace Kaadugal
 
 	void BuildTreeBreadthFirst(void)
 	{
-	    
+	    // TODO:
 	};
 
 	void BuildTreeHybrid(void)
 	{
-	    
+	    // TODO:	    
 	};
     };
 } // namespace Kaadugal
