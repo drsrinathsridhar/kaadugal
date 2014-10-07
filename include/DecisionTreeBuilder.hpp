@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "DecisionTree.hpp"
-#include "AbstractDataSet.hpp"
+#include "Abstract/AbstractDataSet.hpp"
 #include "Parameters.hpp"
 
 namespace Kaadugal
@@ -17,7 +17,7 @@ namespace Kaadugal
     {
     private:
 	std::shared_ptr<DecisionTree<T, S, R>> m_Tree;
-	AbstractDataSet m_DataSet; // Dataset should never be modified
+	AbstractDataSet m_PartitionedDataSet; // Dataset should never be modified
 	const ForestBuilderParameters& m_Parameters; // Parameters also should never be modified
 	bool m_isTreeTrained;
 
@@ -29,13 +29,13 @@ namespace Kaadugal
 
 	};
 
-	bool Build(const AbstractDataSet& DataSet)
+	bool Build(const AbstractDataSet& PartitionedDataSet)
 	{
 	    m_Tree = std::shared_ptr<DecisionTree<T, S, R>>(new DecisionTree<T, S, R>(m_Parameters.m_MaxLevels));
-	    m_DataSet = DataSet;
+	    m_PartitionedDataSet = PartitionedDataSet;
 	    bool Success = true;
 	    if(m_Parameters.m_TrainMethod == TrainMethod::DFS)
-		Success = BuildTreeDepthFirst(m_DataSet, 0, 0);
+		Success = BuildTreeDepthFirst(m_PartitionedDataSet, 0, 0);
 	    if(m_Parameters.m_TrainMethod == TrainMethod::BFS)
 		Success = BuildTreeBreadthFirst();
 	    if(m_Parameters.m_TrainMethod == TrainMethod::Hybrid)
@@ -47,20 +47,71 @@ namespace Kaadugal
 
 	bool BuildTreeDepthFirst(const AbstractDataSet& PartitionedDataSet, int NodeIndex, int CurrentNodeDepth)
 	{
-	    // if(CurrentNodeDepth > m_Tree->GetMaxDecisionLevels())
-	    // {
-	    // 	m_Tree->GetNode(NodeIndex).MakeLeafNode();
-	    // 	return;
-	    // }
+	    if(CurrentNodeDepth > m_Tree->GetMaxDecisionLevels())
+	    {
+	    	// m_Tree->GetNode(NodeIndex).MakeLeafNode(); // Leaf node can be "endowed" with arbitrary data
+	    	return true;
+	    }
 
-	    // // Initialize optimal values
-	    // VPFloat OptGain = -std::numeric_limits<VPFloat>::infinity();
-	    // T OptFeatureResponse; // This should create empty feature response
-	    
-	    // for(int i = 0; i < m_Parameters.m_NumCandidateThresholds; ++i)
-	    // {
-	    // 	T FeatureResponse(1); // This should sample from possible elements in the feature response set
-	    // };	    
+	    // Initialize optimal values
+	    VPFloat OptGain = 0.0;
+	    T OptFeatureResponse; // This should create empty feature response
+	    VPFloat OptThreshold = std::numeric_limits<VPFloat>::epsilon(); // Is this the best way?
+	    AbstractDataSet OptLeftPartition;
+	    AbstractDataSet OptRightPartition;
+
+	    int NumThresholds = 100; // TODO: Need an intelligent way of finding this
+	    std::vector<VPFloat> Thresholds;
+  	    
+	    for(int i = 0; i < m_Parameters.m_NumCandidateThresholds; ++i)
+	    {
+		T FeatureResponse; // This should sample from possible elements in the feature response set
+		
+		for(int j = 0; j < NumThresholds; ++j)
+		{
+		    // First partition data based on current splitting candidates
+		    // TODO:
+		    std::pair<AbstractDataSet, AbstractDataSet> Subsets;
+		    // std::pair<AbstractDataSet, AbstractDataSet> Subsets = PartitionedDataSet.Partition(FeatureReponse, Thresholds[i]);
+		    
+		    // Then compute information gain
+		    // TODO:
+		    VPFloat Gain;
+		    // VPFloat Gain = GetInfoGain(PartitionedDataSet, Subsets.first, Subsets.second); // Can use other criteria like Geni index if needed
+
+		    if(Gain > OptGain)
+		    {
+			OptGain = Gain;
+			OptFeatureResponse = FeatureResponse;
+			OptThreshold = Thresholds[i];
+			OptLeftPartition = Subsets.first;
+			OptRightPartition = Subsets.second;
+		    }
+		}
+	    }
+
+	    // Check for some recursion termination conditions
+	    // 1. No gain
+	    if(OptGain <= 0.0)
+	    {
+		// TODO: Build leaf node
+		// Zero gain here which is bad. 
+		std::cout << "[ WARN ]: No gain for any of the splitting candidates";
+		return true;
+	    }
+
+	    // 2. TODO: Stop recursion if gain is too little
+
+	    // Now free to make a split node
+	    // TODO: Make a split node from splitting candidates, data and statistics
+
+	    // Now recurse ;)
+	    // Since we store the decision tree as a full binary tree (in
+	    // breadth-first order) we can easily get the left and right children indices
+	    BuildTreeDepthFirst(OptLeftPartition, 2*NodeIndex+1, CurrentNodeDepth+1);
+	    BuildTreeDepthFirst(OptRightPartition, 2*NodeIndex+2, CurrentNodeDepth+1);
+	    	    
+	    return true;
 	};
 
 	bool BuildTreeBreadthFirst(void)
