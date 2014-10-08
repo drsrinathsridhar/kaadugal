@@ -10,15 +10,20 @@ int main(int argc, char * argv[])
     Kaadugal::AbstractDataSet AbsTestData; // TODO: Read this from disk
 
     // Build forest from training data
-    Kaadugal::DecisionForestBuilder<Kaadugal::AbstractFeatureResponse, Kaadugal::AbstractStatistics, Kaadugal::AbstractLeafData> ForestBuilder(ForestParams);
-    ForestBuilder.Build(AbsTestData);
-    if(ForestBuilder.DoneBuild() == true)
+    Kaadugal::DecisionForestBuilder<Kaadugal::AbstractFeatureResponse
+				    , Kaadugal::AbstractStatistics
+				    , Kaadugal::AbstractLeafData
+				    , Kaadugal::AbstractDataSet
+				    , Kaadugal::AbstractDataSetIndex> ForestBuilder(ForestParams);
+    if(ForestBuilder.Build(AbsTestData) == true)
     {
 	std::cout << "Random Forest successfully trained." << std::endl;
+	int t;
+	std::cin >> t;
     }
+    else
+	std::cout << "[ ERROR ]: Unable to train forest." << std::endl;
 
-    int t;
-    std::cin >> t;
     
     return 0;
 }
