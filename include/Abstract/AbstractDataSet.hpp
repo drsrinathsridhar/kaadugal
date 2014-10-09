@@ -5,11 +5,19 @@
 
 namespace Kaadugal
 {
+    class AbstractDataPoint
+    {
+
+    };
+
     class AbstractDataSet
     {
+    protected:
+	std::vector<std::shared_ptr<AbstractDataPoint>> m_DataPoints;
+
     public:
-	// int Size(void) = 0; // TODO: This must be virtual
-	int Size(void) { return 10; };
+	virtual int Size(void) { return m_DataPoints.size(); };
+	virtual std::shared_ptr<AbstractDataPoint> Get(int i) { return m_DataPoints[i]; };
     };
 } // namespace Kaadugal
 

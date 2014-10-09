@@ -19,7 +19,19 @@ namespace Kaadugal
 	DataSetIndex(std::shared_ptr<AbstractDataSet> DataSet, const std::vector<int>& Index)
 	{
 	    m_BaseDataSet = DataSet;
+	    if(Index.size() > m_BaseDataSet->Size())
+		std::cout << "[ WARN ]: Index size (" << Index.size() << ") exceeds dataset size (" << m_BaseDataSet->Size() << ")." << std::endl;
 	    m_Index = Index;
+	};
+
+	virtual int Size(void) { return m_Index.size(); };
+
+	std::shared_ptr<AbstractDataPoint> GetDataPoint(int i)
+	{
+	    if(i >= Size())
+		return nullptr;
+
+	    return m_BaseDataSet->Get(m_Index[i]);
 	};
     };
 

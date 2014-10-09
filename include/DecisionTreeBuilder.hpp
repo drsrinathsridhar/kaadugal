@@ -97,7 +97,7 @@ namespace Kaadugal
 	    {
 		// TODO: Build leaf node
 		// Zero gain here which is bad. 
-		std::cout << "[ WARN ]: No gain for any of the splitting candidates";
+std::cout << "[ WARN ]: No gain for any of the splitting candidates" << std::endl;
 		return true;
 	    }
 
