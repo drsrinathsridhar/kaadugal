@@ -19,7 +19,7 @@ namespace Kaadugal
     private:
 	std::shared_ptr<AbstractDataSet> m_DataSet;
 	std::unique_ptr<DataSetIndex> m_DataSetIndex;
-	std::vector<std::shared_ptr<DataSetIndex>> m_DataSubsets; // Each subset is passed to a tree for training
+	std::vector<std::shared_ptr<DataSetIndex>> m_DataSubsetsIdx; // Each subset is passed to a tree for training
 	const ForestBuilderParameters& m_Parameters; // Parameters also should never be modified
 	std::vector<DecisionTreeBuilder<T,S,R>> m_TreeBuilders;
 	DecisionForest<T,S,R> m_Forest;
@@ -60,7 +60,7 @@ namespace Kaadugal
 		//     std::cout << SubIdx[i] << std::endl;
 		// std::cout << std::endl;
 
-		m_DataSubsets.push_back(std::make_shared<DataSetIndex>(DataSetIndex(m_DataSet, SubIdx)));
+		m_DataSubsetsIdx.push_back(std::make_shared<DataSetIndex>(DataSetIndex(m_DataSet, SubIdx)));
 	    }
 	};
 
@@ -88,13 +88,13 @@ namespace Kaadugal
 
 	    for(int i = 0; i < m_TreeBuilders.size(); ++i)
 	    {
-		Success &= m_TreeBuilders[i].Build(m_DataSubsets[i]);
+		Success &= m_TreeBuilders[i].Build(m_DataSubsetsIdx[i]);
 		m_Forest.AddTree(m_TreeBuilders[i].GetTree());
 	    }
 
 	    m_isForestTrained = Success;
 	    return m_isForestTrained;
-	};	
+	};
 
 	const DecisionForest<T,S,R>& GetForest(void) { return m_Forest; };
 	const bool DoneBuild(void) { return m_isForestTrained; };

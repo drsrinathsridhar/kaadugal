@@ -36,11 +36,11 @@ namespace Kaadugal
 	    m_PartitionedDataSetIdx = PartitionedDataSetIdx;
 	    bool Success = true;
 	    if(m_Parameters.m_TrainMethod == TrainMethod::DFS)
-		Success = BuildTreeDepthFirst(m_PartitionedDataSetIdx, 0, 0);
-	    if(m_Parameters.m_TrainMethod == TrainMethod::BFS)
-		Success = BuildTreeBreadthFirst();
-	    if(m_Parameters.m_TrainMethod == TrainMethod::Hybrid)
-		Success = BuildTreeHybrid();
+	    	Success = BuildTreeDepthFirst(m_PartitionedDataSetIdx, 0, 0);
+	    // if(m_Parameters.m_TrainMethod == TrainMethod::BFS)
+	    // 	Success = BuildTreeBreadthFirst();
+	    // if(m_Parameters.m_TrainMethod == TrainMethod::Hybrid)
+	    // 	Success = BuildTreeHybrid();
 
 	    m_isTreeTrained = Success;
 	    return m_isTreeTrained;
@@ -48,22 +48,27 @@ namespace Kaadugal
 
 	bool BuildTreeDepthFirst(std::shared_ptr<DataSetIndex> PartitionedDataSetIdx, int NodeIndex, int CurrentNodeDepth)
 	{
-	    if(CurrentNodeDepth > m_Tree->GetMaxDecisionLevels())
+	    S ParentNodeStats(PartitionedDataSetIdx);
+	    if(CurrentNodeDepth >= m_Tree->GetMaxDecisionLevels()) // Both are zero-indexed
 	    {
-	    	// m_Tree->GetNode(NodeIndex).MakeLeafNode(); // Leaf node can be "endowed" with arbitrary data
+		std::cout << "[ INFO ]: Terminating splitting at maximum tree depth." << std::endl;
+	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 	    	return true;
 	    }
 
 	    // Initialize optimal values
-	    VPFloat OptGain = 0.0;
+	    VPFloat OptObjVal = 0.0;
 	    T OptFeatureResponse; // This should create empty feature response
 	    VPFloat OptThreshold = std::numeric_limits<VPFloat>::epsilon(); // Is this the best way?
-	    std::shared_ptr<DataSetIndex> OptLeftPartition;
-	    std::shared_ptr<DataSetIndex> OptRightPartition;
+	    std::shared_ptr<DataSetIndex> OptLeftPartitionIdx;
+	    std::shared_ptr<DataSetIndex> OptRightPartitionIdx;
+	    S OptLeftNodeStats;
+	    S OptRightNodeStats;
 
-	    int NumThresholds = 100; // TODO: Need an intelligent way of finding this
-	    std::vector<VPFloat> Thresholds;
+	    int NumThresholds = 10; // TODO: Need an intelligent way of finding this
+	    std::vector<VPFloat> Thresholds(NumThresholds, 0.0);
   	    
+	    // TODO: Candidate for parallelization
 	    for(int i = 0; i < m_Parameters.m_NumCandidateThresholds; ++i)
 	    {
 		T FeatureResponse; // This should sample from possible elements in the feature response set
@@ -74,55 +79,66 @@ namespace Kaadugal
 		    // TODO:
 		    std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets;
 		    // std::pair<AbstractDataSet, AbstractDataSet> Subsets = PartitionedDataSet.Partition(FeatureReponse, Thresholds[i]);
-		    
-		    // Then compute information gain
-		    // TODO:
-		    VPFloat Gain;
-		    // VPFloat Gain = GetInfoGain(PartitionedDataSet, Subsets.first, Subsets.second); // Can use other criteria like Geni index if needed
 
-		    if(Gain > OptGain)
+		    S LeftNodeStats(Subsets.first);
+		    S RightNodeStats(Subsets.second);
+		    
+		    // Then compute some objective function value. Examples: information gain, Geni index
+		    VPFloat ObjVal = GetObjectiveValue(ParentNodeStats, LeftNodeStats, RightNodeStats);
+
+		    if(ObjVal > OptObjVal)
 		    {
-			OptGain = Gain;
+			OptObjVal = ObjVal;
 			OptFeatureResponse = FeatureResponse;
 			OptThreshold = Thresholds[i];
-			OptLeftPartition = Subsets.first;
-			OptRightPartition = Subsets.second;
+			OptLeftPartitionIdx = Subsets.first;
+			OptRightPartitionIdx = Subsets.second;
+			OptLeftNodeStats = LeftNodeStats;
+			OptRightNodeStats = RightNodeStats;
 		    }
 		}
 	    }
 
 	    // Check for some recursion termination conditions
 	    // 1. No gain
-	    if(OptGain <= 0.0)
+	    if(OptObjVal <= 0.0)
 	    {
-		// TODO: Build leaf node
 		// Zero gain here which is bad. 
-std::cout << "[ WARN ]: No gain for any of the splitting candidates" << std::endl;
+		std::cout << "[ WARN ]: No gain for any of the splitting candidates" << std::endl;
+	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 		return true;
 	    }
 
 	    // 2. TODO: Stop recursion if gain is too little
 
 	    // Now free to make a split node
-	    // TODO: Make a split node from splitting candidates, data and statistics
+	    m_Tree->GetNode(NodeIndex).MakeSplitNode(ParentNodeStats, OptFeatureResponse, OptThreshold);
 
-	    // Now recurse ;)
+	    // Now recurse :)
 	    // Since we store the decision tree as a full binary tree (in
 	    // breadth-first order) we can easily get the left and right children indices
-	    BuildTreeDepthFirst(OptLeftPartition, 2*NodeIndex+1, CurrentNodeDepth+1);
-	    BuildTreeDepthFirst(OptRightPartition, 2*NodeIndex+2, CurrentNodeDepth+1);
+	    BuildTreeDepthFirst(OptLeftPartitionIdx, 2*NodeIndex+1, CurrentNodeDepth+1);
+	    BuildTreeDepthFirst(OptRightPartitionIdx, 2*NodeIndex+2, CurrentNodeDepth+1);
 	    	    
 	    return true;
+	};
+
+	VPFloat GetObjectiveValue(const S& ParentStats, const S& LeftStats, const S& RightStats)
+	{
+
+	    return 10.0;
 	};
 
 	bool BuildTreeBreadthFirst(void)
 	{
 	    // TODO:
+	    std::cout << "[ INFO ]: BuildTreeBreadthFirst() is not yet implemented." << std::endl;
 	};
 
 	bool BuildTreeHybrid(void)
 	{
-	    // TODO:	    
+	    // TODO:
+	    std::cout << "[ INFO ]: BuildTreeHybrid() is not yet implemented." << std::endl;
 	};
 
 	const std::shared_ptr<DecisionTree<T, S, R>> GetTree(void) { return m_Tree; };

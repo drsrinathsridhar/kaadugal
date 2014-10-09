@@ -51,7 +51,7 @@ namespace Kaadugal
 	    m_Type = RHS.m_Type;
 	};
 
-	void MakeSplitNode(T FeatureResponse, S Statistics, VPFloat Threshold)
+	void MakeSplitNode(S Statistics, T FeatureResponse, VPFloat Threshold)
 	{
 	    m_Type = Kaadugal::SplitNode;
 	    m_Threshold = Threshold;
@@ -59,11 +59,12 @@ namespace Kaadugal
 	    m_Statistics = Statistics; // Deep copy	    
 	};
 
-	void MakeLeafNode(T FeatureResponse, S Statistics, R Data)
+	void MakeLeafNode(S Statistics, R Data = R())
 	{
+	    // NOTE: If not leaf data is passed, then m_Data is also dummy. This is fine
 	    m_Type = Kaadugal::LeafNode;
 	    m_Threshold = std::numeric_limits<VPFloat>::quiet_NaN(); // Leaves don't have thresholds
-	    m_FeatureResponse = FeatureResponse; // Deep copy. TODO: Do we need deep copy?
+	    m_FeatureResponse = T(); // TODO: Leaves don't need feature responses. So dummy
 	    m_Statistics = Statistics; // Deep copy
 	    m_Data = Data; // Deep copy
 	};

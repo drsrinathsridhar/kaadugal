@@ -6,6 +6,7 @@
 
 std::string g_ParamFileName;
 std::string g_DataFileName;
+bool g_isTrainMode;
 
 void PrintUsage(char * argv[])
 {
@@ -26,6 +27,10 @@ bool ParseArguments(int argc, char * argv[])
     }
     g_ParamFileName = argv[2];
     g_DataFileName = argv[3];
+    if(std::string(argv[1]) == "train")
+	g_isTrainMode = true;
+    else
+	g_isTrainMode = false;	
 
     return true;
 }
@@ -35,24 +40,28 @@ int main(int argc, char * argv[])
     if(ParseArguments(argc, argv) == false)
 	return -1;
 
-    // Load parameters from file
-    Kaadugal::ForestBuilderParameters ForestParams(g_ParamFileName);
-    PointSet2D TestData(g_DataFileName);
-    std::shared_ptr<Kaadugal::AbstractDataSet> TestDataPtr = std::make_shared<PointSet2D>(TestData);
-
-    // Build forest from training data
-    Kaadugal::DecisionForestBuilder<Kaadugal::AbstractFeatureResponse
-				    , Kaadugal::AbstractStatistics
-				    , Kaadugal::AbstractLeafData> ForestBuilder(ForestParams);
-    if(ForestBuilder.Build(TestDataPtr) == true)
+    if(g_isTrainMode)
     {
-	std::cout << "Random Forest successfully trained." << std::endl;
-	int t;
-	std::cin >> t;
+	// Load parameters from file
+	Kaadugal::ForestBuilderParameters ForestParams(g_ParamFileName);
+	PointSet2D Point2DData(g_DataFileName);
+	std::shared_ptr<Kaadugal::AbstractDataSet> Point2DDataPtr = std::make_shared<PointSet2D>(Point2DData);
+
+	// Build forest from training data
+	Kaadugal::DecisionForestBuilder<Kaadugal::AbstractFeatureResponse
+					, Kaadugal::AbstractStatistics
+					, Kaadugal::AbstractLeafData> ForestBuilder(ForestParams);
+	if(ForestBuilder.Build(Point2DDataPtr) == true)
+	{
+	    std::cout << "Random Forest successfully trained." << std::endl;
+	    int t;
+	    std::cin >> t;
+	}
+	else
+	    std::cout << "[ ERROR ]: Unable to train forest." << std::endl;
     }
     else
-	std::cout << "[ ERROR ]: Unable to train forest." << std::endl;
+	std::cout << "[ WARN ]: Tree testing not implemented yet." << std::endl;
 
-    
     return 0;
 }
