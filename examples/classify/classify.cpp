@@ -8,14 +8,13 @@ int main(int argc, char * argv[])
     // Load parameters from file
     Kaadugal::ForestBuilderParameters ForestParams("test.param");
     Kaadugal::AbstractDataSet AbsTestData; // TODO: Read this from disk
+    std::shared_ptr<Kaadugal::AbstractDataSet> TestDataPtr = std::make_shared<Kaadugal::AbstractDataSet>(AbsTestData);
 
     // Build forest from training data
     Kaadugal::DecisionForestBuilder<Kaadugal::AbstractFeatureResponse
 				    , Kaadugal::AbstractStatistics
-				    , Kaadugal::AbstractLeafData
-				    , Kaadugal::AbstractDataSet
-				    , Kaadugal::AbstractDataSetIndex> ForestBuilder(ForestParams);
-    if(ForestBuilder.Build(AbsTestData) == true)
+				    , Kaadugal::AbstractLeafData> ForestBuilder(ForestParams);
+    if(ForestBuilder.Build(TestDataPtr) == true)
     {
 	std::cout << "Random Forest successfully trained." << std::endl;
 	int t;

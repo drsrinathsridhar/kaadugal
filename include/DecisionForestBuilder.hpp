@@ -6,21 +6,20 @@
 #include "DecisionForest.hpp"
 #include "DecisionTreeBuilder.hpp"
 #include "Randomizer.hpp"
+#include "DataSetIndex.hpp"
 
 namespace Kaadugal
 {
     // T: AbstractFeatureResponse which is the feature response function or weak learner
     // S: AbstractStatistics which contains some statistics about node from training
     // R: AbstractLeafData, arbitrary data stored if this is a leaf node
-    // Q: AbstractDataSet, arbitrary dataset types that can be used
-    // P: AbstractDataSetIndex, an index into the arbitrary data type
-    template<class T, class S, class R, class Q, class P>
+    template<class T, class S, class R>
     class DecisionForestBuilder
     {
     private:
-	Q m_DataSet; // TODO: Dataset should never be modified
-	std::unique_ptr<P> m_DataSetIndex;
-	std::vector<P> m_DataSubsets; // Each subset is passed to a tree for training
+	std::shared_ptr<AbstractDataSet> m_DataSet;
+	std::unique_ptr<DataSetIndex> m_DataSetIndex;
+	std::vector<std::shared_ptr<DataSetIndex>> m_DataSubsets; // Each subset is passed to a tree for training
 	const ForestBuilderParameters& m_Parameters; // Parameters also should never be modified
 	std::vector<DecisionTreeBuilder<T,S,R>> m_TreeBuilders;
 	DecisionForest<T,S,R> m_Forest;
@@ -28,14 +27,14 @@ namespace Kaadugal
 
 	bool RandomPartition(void)
 	{
-	    int SetSize = m_DataSet.Size();
+	    int SetSize = m_DataSet->Size();
 	    // Create an indices set with all indices
 	    std::vector<int> Indices;
 	    for(int i = 0; i < SetSize; ++i)
 		Indices.push_back(i);
 	    
 	    // Contains index to all points in the data set
-	    m_DataSetIndex = std::unique_ptr<P>(new P(std::make_shared<Q>(m_DataSet), Indices));
+	    m_DataSetIndex = std::unique_ptr<DataSetIndex>(new DataSetIndex(m_DataSet, Indices));
 
 	    std::shuffle(Indices.begin(), Indices.end(), Randomizer::Get().GetRNG());
 	    // for(int i = 0; i < SetSize; ++i)
@@ -54,14 +53,14 @@ namespace Kaadugal
 		if(RemCtr != Remainder) // Let's distribute the remainder evenly to the first k (k = Remainder) trees
 		{
 		    SubIdx.push_back(Indices[NumSubsets*SubsetSize + RemCtr]);
-		    RemCtr++;		    
+		    RemCtr++;
 		}
 
 		// for(int i = 0; i < SubIdx.size(); ++i)
 		//     std::cout << SubIdx[i] << std::endl;
 		// std::cout << std::endl;
 
-		m_DataSubsets.push_back(P(std::make_shared<Q>(m_DataSet), SubIdx));
+		m_DataSubsets.push_back(std::make_shared<DataSetIndex>(DataSetIndex(m_DataSet, SubIdx)));
 	    }
 	};
 
@@ -74,10 +73,10 @@ namespace Kaadugal
 		m_TreeBuilders.push_back(DecisionTreeBuilder<T,S,R>(m_Parameters));
 	};
 
-	bool Build(const Q& DataSet)
+	bool Build(std::shared_ptr<AbstractDataSet> DataSet)
 	{
 	    m_DataSet = DataSet;
-	    if(m_Parameters.m_NumTrees > m_DataSet.Size())
+	    if(m_Parameters.m_NumTrees > m_DataSet->Size())
 	    {
 		std::cout << "[ WARN ]: The number of trees is greater than the number of training samples. Cannot train forest." << std::endl;
 		return false;
@@ -89,7 +88,7 @@ namespace Kaadugal
 
 	    for(int i = 0; i < m_TreeBuilders.size(); ++i)
 	    {
-		Success &= m_TreeBuilders[i].Build(m_DataSet);
+		Success &= m_TreeBuilders[i].Build(m_DataSubsets[i]);
 		m_Forest.AddTree(m_TreeBuilders[i].GetTree());
 	    }
 

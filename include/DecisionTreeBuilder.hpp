@@ -6,6 +6,7 @@
 #include "DecisionTree.hpp"
 #include "Abstract/AbstractDataSet.hpp"
 #include "Parameters.hpp"
+#include "DataSetIndex.hpp"
 
 namespace Kaadugal
 {
@@ -17,7 +18,7 @@ namespace Kaadugal
     {
     private:
 	std::shared_ptr<DecisionTree<T, S, R>> m_Tree;
-	AbstractDataSet m_PartitionedDataSet; // Dataset should never be modified
+	std::shared_ptr<DataSetIndex> m_PartitionedDataSetIdx;
 	const ForestBuilderParameters& m_Parameters; // Parameters also should never be modified
 	bool m_isTreeTrained;
 
@@ -29,13 +30,13 @@ namespace Kaadugal
 
 	};
 
-	bool Build(const AbstractDataSet& PartitionedDataSet)
+	bool Build(std::shared_ptr<DataSetIndex> PartitionedDataSetIdx)
 	{
 	    m_Tree = std::shared_ptr<DecisionTree<T, S, R>>(new DecisionTree<T, S, R>(m_Parameters.m_MaxLevels));
-	    m_PartitionedDataSet = PartitionedDataSet;
+	    m_PartitionedDataSetIdx = PartitionedDataSetIdx;
 	    bool Success = true;
 	    if(m_Parameters.m_TrainMethod == TrainMethod::DFS)
-		Success = BuildTreeDepthFirst(m_PartitionedDataSet, 0, 0);
+		Success = BuildTreeDepthFirst(m_PartitionedDataSetIdx, 0, 0);
 	    if(m_Parameters.m_TrainMethod == TrainMethod::BFS)
 		Success = BuildTreeBreadthFirst();
 	    if(m_Parameters.m_TrainMethod == TrainMethod::Hybrid)
@@ -45,7 +46,7 @@ namespace Kaadugal
 	    return m_isTreeTrained;
 	};
 
-	bool BuildTreeDepthFirst(const AbstractDataSet& PartitionedDataSet, int NodeIndex, int CurrentNodeDepth)
+	bool BuildTreeDepthFirst(std::shared_ptr<DataSetIndex> PartitionedDataSetIdx, int NodeIndex, int CurrentNodeDepth)
 	{
 	    if(CurrentNodeDepth > m_Tree->GetMaxDecisionLevels())
 	    {
@@ -57,8 +58,8 @@ namespace Kaadugal
 	    VPFloat OptGain = 0.0;
 	    T OptFeatureResponse; // This should create empty feature response
 	    VPFloat OptThreshold = std::numeric_limits<VPFloat>::epsilon(); // Is this the best way?
-	    AbstractDataSet OptLeftPartition;
-	    AbstractDataSet OptRightPartition;
+	    std::shared_ptr<DataSetIndex> OptLeftPartition;
+	    std::shared_ptr<DataSetIndex> OptRightPartition;
 
 	    int NumThresholds = 100; // TODO: Need an intelligent way of finding this
 	    std::vector<VPFloat> Thresholds;
@@ -71,7 +72,7 @@ namespace Kaadugal
 		{
 		    // First partition data based on current splitting candidates
 		    // TODO:
-		    std::pair<AbstractDataSet, AbstractDataSet> Subsets;
+		    std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets;
 		    // std::pair<AbstractDataSet, AbstractDataSet> Subsets = PartitionedDataSet.Partition(FeatureReponse, Thresholds[i]);
 		    
 		    // Then compute information gain
