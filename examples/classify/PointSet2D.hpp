@@ -26,6 +26,8 @@ public:
 
     int m_ClassLabel; // Always integer starting with 0. -1 means no class label
 
+    int GetLabel(void) { return m_ClassLabel; };
+
     friend std::ostream& operator<<(std::ostream &s, const Point2D &p)
     {
 	s << "[ " << p.m_x << ", " << p.m_y << "]: " << p.m_ClassLabel << "\n";
@@ -44,6 +46,8 @@ public:
     {
 	Deserialize(DataFileName);
     };
+
+    const int GetNumClasses(void) { return m_NumClassLabels; };
 
     void Deserialize(const std::string& DataFileName)
     {

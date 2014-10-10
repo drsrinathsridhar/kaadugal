@@ -54,8 +54,8 @@ int main(int argc, char * argv[])
 	if(ForestBuilder.Build(Point2DDataPtr) == true)
 	{
 	    std::cout << "Random Forest successfully trained." << std::endl;
-	    int t;
-	    std::cin >> t;
+	    // int t;
+	    // std::cin >> t;
 	}
 	else
 	    std::cout << "[ ERROR ]: Unable to train forest." << std::endl;

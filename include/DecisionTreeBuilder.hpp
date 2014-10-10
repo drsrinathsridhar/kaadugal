@@ -7,6 +7,7 @@
 #include "Abstract/AbstractDataSet.hpp"
 #include "Parameters.hpp"
 #include "DataSetIndex.hpp"
+#include "Randomizer.hpp"
 
 namespace Kaadugal
 {
@@ -30,14 +31,13 @@ namespace Kaadugal
 
 	};
 
-	std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Partition(std::shared_ptr<DataSetIndex> ParentDataSetIdx, T FeatureResponse, VPFloat Threshold)
+	std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Partition(std::shared_ptr<DataSetIndex> ParentDataSetIdx, const std::vector<VPFloat>& Responses, VPFloat Threshold)
 	{
 	    std::vector<int> LeftSubsetPts;
 	    std::vector<int> RightSubsetPts;
 	    for(int i = 0; i < ParentDataSetIdx->Size(); ++i)
 	    {
-		VPFloat RespVal = FeatureResponse.GetResponse(ParentDataSetIdx->GetDataPoint(i));
-		if(RespVal > Threshold)
+		if(Responses[i] > Threshold)
 		    LeftSubsetPts.push_back(ParentDataSetIdx->GetDataPointIndex(i));
 		else
 		    RightSubsetPts.push_back(ParentDataSetIdx->GetDataPointIndex(i));
@@ -47,6 +47,44 @@ namespace Kaadugal
 				  , std::shared_ptr<DataSetIndex>(new DataSetIndex(ParentDataSetIdx->GetDataSet(), RightSubsetPts)));
 	};
 
+	const std::vector<VPFloat> SelectThresholds(std::shared_ptr<DataSetIndex> DataSubsetIdx, const std::vector<VPFloat>& Responses)
+	{
+	    // Please see Efficient Implementation of Decision Forests, Shotton et al. 2013
+	    // Section 21.3.3 explains how to implement this threshold selection using quantiles
+	    // Also see the Sherwood Library from Microsoft Research
+	    std::vector<VPFloat> Thresholds(m_Parameters.m_NumCandidateThresholds); // This is different from the Sherwood implementation. We don't use n+1
+	    std::vector<int>::size_type NumThresholds;
+	    std::vector<VPFloat> Quantiles(m_Parameters.m_NumCandidateThresholds + 1); // TODO: Candidate for memory saving
+
+	    // This isn't ideal because if size of data subset is only a few above NumThresh, then Randomizer will repeat some values
+	    if(DataSubsetIdx->Size() > m_Parameters.m_NumCandidateThresholds)
+	    {
+		// Sample m_NumCandidateThresholds+1 times (uniformly randomly) from Responses
+		std::uniform_int_distribution<int> UniDist(0, int(DataSubsetIdx->Size()-1)); // Both inclusive
+		for(int i = 0; i < m_Parameters.m_NumCandidateThresholds + 1; i++)
+		    Quantiles[i] = Responses[UniDist(Randomizer::Get().GetRNG())];
+	    }
+	    else
+	    {
+		Quantiles.resize(Responses.size());
+		std::copy(Responses.begin(), Responses.end(), Quantiles.begin());
+	    }
+
+	    // Now compute quantiles. See https://www.stat.auckland.ac.nz/~ihaka/787/lectures-quantiles-handouts.pdf
+	    // if you don't know how to do this
+	    std::sort(Quantiles.begin(), Quantiles.end());
+
+	    if(Quantiles[0] == Quantiles[Quantiles.size()-1])
+		return std::vector<VPFloat>(); // Looks like samples were all the same. This is bad
+
+	    // Compute n candidate thresholds by sampling in between n+1 approximate quantiles
+	    std::uniform_real_distribution<VPFloat> UniRealDist(0, 1); // [0, 1), NOTE the exclusive end
+	    for(int i = 0; i < NumThresholds; ++i)
+		Thresholds[i] = Quantiles[i] + VPFloat(UniRealDist(Randomizer::Get().GetRNG()) * (Quantiles[i + 1] - Quantiles[i]));
+
+	    return Thresholds;
+	};
+
 	bool Build(std::shared_ptr<DataSetIndex> PartitionedDataSetIdx)
 	{
 	    m_Tree = std::shared_ptr<DecisionTree<T, S, R>>(new DecisionTree<T, S, R>(m_Parameters.m_MaxLevels));
@@ -54,10 +92,10 @@ namespace Kaadugal
 	    bool Success = true;
 	    if(m_Parameters.m_TrainMethod == TrainMethod::DFS)
 	    	Success = BuildTreeDepthFirst(m_PartitionedDataSetIdx, 0, 0);
-	    // if(m_Parameters.m_TrainMethod == TrainMethod::BFS)
-	    // 	Success = BuildTreeBreadthFirst();
-	    // if(m_Parameters.m_TrainMethod == TrainMethod::Hybrid)
-	    // 	Success = BuildTreeHybrid();
+	    if(m_Parameters.m_TrainMethod == TrainMethod::BFS)
+	    	Success = BuildTreeBreadthFirst();
+	    if(m_Parameters.m_TrainMethod == TrainMethod::Hybrid)
+	    	Success = BuildTreeHybrid();
 
 	    m_isTreeTrained = Success;
 	    return m_isTreeTrained;
@@ -82,18 +120,22 @@ namespace Kaadugal
 	    S OptLeftNodeStats;
 	    S OptRightNodeStats;
 
-	    int NumThresholds = 10; // TODO: Need an intelligent way of finding this
-	    std::vector<VPFloat> Thresholds(NumThresholds, 0.0);
-  	    
 	    // TODO: Candidate for parallelization
-	    for(int i = 0; i < m_Parameters.m_NumCandidateThresholds; ++i)
+	    for(int i = 0; i < m_Parameters.m_NumCandidateFeatures; ++i)
 	    {
 		T FeatureResponse; // This should sample from possible elements in the feature response set
+		std::vector<VPFloat> Responses;
+		int DataSetSize = PartitionedDataSetIdx->Size();
+		for(int k = 0; k < DataSetSize; ++k)
+		    Responses.push_back(FeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k))); // TODO: Can be parallelized/made more efficient?
+
+		const std::vector<VPFloat>& Thresholds = SelectThresholds(PartitionedDataSetIdx, Responses);
+		int NumThresholds = Thresholds.size();
 		
 		for(int j = 0; j < NumThresholds; ++j)
 		{
 		    // First partition data based on current splitting candidates
-		    std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets = Partition(PartitionedDataSetIdx, FeatureResponse, Thresholds[i]);
+		    std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets = Partition(PartitionedDataSetIdx, Responses, Thresholds[i]);
 
 		    S LeftNodeStats(Subsets.first);
 		    S RightNodeStats(Subsets.second);
@@ -128,6 +170,7 @@ namespace Kaadugal
 
 	    // Now free to make a split node
 	    m_Tree->GetNode(NodeIndex).MakeSplitNode(ParentNodeStats, OptFeatureResponse, OptThreshold);
+	    std::cout << "[ INFO ]: Creating split node..." << std::endl;
 
 	    // Now recurse :)
 	    // Since we store the decision tree as a full binary tree (in
@@ -138,10 +181,20 @@ namespace Kaadugal
 	    return true;
 	};
 
-	VPFloat GetObjectiveValue(const S& ParentStats, const S& LeftStats, const S& RightStats)
+	VPFloat GetObjectiveValue(S& ParentStats, S& LeftStats, S& RightStats)
 	{
+	    // Statistics are already aggregated
+	    if(!ParentStats.isAggregated() || !LeftStats.isAggregated() || !RightStats.isAggregated())
+		return 0.0;
 
-	    return 10.0;
+	    // NOTE: We are using information gain as the objective function
+	    // Change this and use a template/abstract class, if needed
+	    // See any of the Shotton et al. papers for this definition
+	    VPFloat InformationGain = ParentStats.GetEntropy()
+		- ( VPFloat(LeftStats.GetNumDataPoints())  * LeftStats.GetEntropy()
+		    + VPFloat(RightStats.GetNumDataPoints()) * RightStats.GetEntropy() ) / VPFloat(ParentStats.GetNumDataPoints());
+
+	    return InformationGain;
 	};
 
 	bool BuildTreeBreadthFirst(void)

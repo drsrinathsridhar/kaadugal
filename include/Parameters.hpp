@@ -20,13 +20,15 @@ namespace Kaadugal
     public:
 	int m_NumTrees;
 	int m_MaxLevels;
+	int m_NumCandidateFeatures;
 	int m_NumCandidateThresholds;
 	TrainMethod m_TrainMethod;
 	bool m_isValid;
 	
-	ForestBuilderParameters(int NumTrees, int MaxLevels, int NumCandidateThresholds, TrainMethod Type = TrainMethod::DFS)
+	ForestBuilderParameters(int NumTrees, int MaxLevels, int NumCandidateFeatures, int NumCandidateThresholds, TrainMethod Type = TrainMethod::DFS)
 	    : m_NumTrees(NumTrees)
 	    , m_MaxLevels(MaxLevels)
+	    , m_NumCandidateFeatures(NumCandidateFeatures)
 	    , m_NumCandidateThresholds(NumCandidateThresholds)
 	    , m_TrainMethod(Type)
 	{
@@ -42,6 +44,7 @@ namespace Kaadugal
 	{
 	    m_NumTrees = RHS.m_NumTrees;
 	    m_MaxLevels = RHS.m_MaxLevels;
+	    m_NumCandidateFeatures = RHS.m_NumCandidateFeatures;
 	    m_NumCandidateThresholds = RHS.m_NumCandidateThresholds;
 	    m_TrainMethod = RHS.m_TrainMethod;
 	    m_isValid = RHS.m_isValid;
@@ -97,18 +100,13 @@ namespace Kaadugal
 				    m_TrainMethod = TrainMethod::DFS;
 				if(Value == "Hybrid")
 				    m_TrainMethod = TrainMethod::Hybrid;
-				// std::cout << Value << std::endl;
 			    }
 			    if(Key == "MaxTreeLevels")
-			    {
 				m_MaxLevels = std::atoi(Value.c_str());
-				// std::cout << m_MaxLevels << std::endl;
-			    }
+			    if(Key == "NumCandidateFeats")
+				m_NumCandidateFeatures = std::atoi(Value.c_str());
 			    if(Key == "NumCandidateThresh")
-			    {
 				m_NumCandidateThresholds = std::atoi(Value.c_str());
-				// std::cout << m_NumCandidateThresholds << std::endl;
-			    }
 			    isKey = false;
 			    continue;
 			}

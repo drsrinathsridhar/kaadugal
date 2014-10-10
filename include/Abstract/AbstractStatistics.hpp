@@ -20,6 +20,8 @@ namespace Kaadugal
 	};
 
 	virtual void Aggregate(std::shared_ptr<DataSetIndex> DataSetIdx) = 0;
+	virtual void Merge(std::shared_ptr<AbstractStatistics> OtherStats) = 0; // Merging two stats together
+	virtual const bool isAggregated(void) { return m_isAggregated; };
 
     protected:
 	bool m_isAggregated;	
