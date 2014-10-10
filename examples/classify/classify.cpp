@@ -3,6 +3,8 @@
 #include "Kaadugal.hpp"
 #include "DecisionForestBuilder.hpp"
 #include "PointSet2D.hpp"
+#include "AAFeatureResponse2D.hpp"
+#include "HistogramStats.hpp"
 
 std::string g_ParamFileName;
 std::string g_DataFileName;
@@ -48,9 +50,7 @@ int main(int argc, char * argv[])
 	std::shared_ptr<Kaadugal::AbstractDataSet> Point2DDataPtr = std::make_shared<PointSet2D>(Point2DData);
 
 	// Build forest from training data
-	Kaadugal::DecisionForestBuilder<Kaadugal::AbstractFeatureResponse
-					, Kaadugal::AbstractStatistics
-					, Kaadugal::AbstractLeafData> ForestBuilder(ForestParams);
+	Kaadugal::DecisionForestBuilder<AAFeatureResponse2D, HistogramStats> ForestBuilder(ForestParams);
 	if(ForestBuilder.Build(Point2DDataPtr) == true)
 	{
 	    std::cout << "Random Forest successfully trained." << std::endl;

@@ -30,6 +30,23 @@ namespace Kaadugal
 
 	};
 
+	std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Partition(std::shared_ptr<DataSetIndex> ParentDataSetIdx, T FeatureResponse, VPFloat Threshold)
+	{
+	    std::vector<int> LeftSubsetPts;
+	    std::vector<int> RightSubsetPts;
+	    for(int i = 0; i < ParentDataSetIdx->Size(); ++i)
+	    {
+		VPFloat RespVal = FeatureResponse.GetResponse(ParentDataSetIdx->GetDataPoint(i));
+		if(RespVal > Threshold)
+		    LeftSubsetPts.push_back(ParentDataSetIdx->GetDataPointIndex(i));
+		else
+		    RightSubsetPts.push_back(ParentDataSetIdx->GetDataPointIndex(i));
+	    }
+
+	    return std::make_pair(std::shared_ptr<DataSetIndex>(new DataSetIndex(ParentDataSetIdx->GetDataSet(), LeftSubsetPts))
+				  , std::shared_ptr<DataSetIndex>(new DataSetIndex(ParentDataSetIdx->GetDataSet(), RightSubsetPts)));
+	};
+
 	bool Build(std::shared_ptr<DataSetIndex> PartitionedDataSetIdx)
 	{
 	    m_Tree = std::shared_ptr<DecisionTree<T, S, R>>(new DecisionTree<T, S, R>(m_Parameters.m_MaxLevels));
@@ -76,9 +93,7 @@ namespace Kaadugal
 		for(int j = 0; j < NumThresholds; ++j)
 		{
 		    // First partition data based on current splitting candidates
-		    // TODO:
-		    std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets;
-		    // std::pair<AbstractDataSet, AbstractDataSet> Subsets = PartitionedDataSet.Partition(FeatureReponse, Thresholds[i]);
+		    std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets = Partition(PartitionedDataSetIdx, FeatureResponse, Thresholds[i]);
 
 		    S LeftNodeStats(Subsets.first);
 		    S RightNodeStats(Subsets.second);

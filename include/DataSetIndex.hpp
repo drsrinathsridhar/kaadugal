@@ -25,14 +25,16 @@ namespace Kaadugal
 	};
 
 	virtual int Size(void) { return m_Index.size(); };
-
-	std::shared_ptr<AbstractDataPoint> GetDataPoint(int i)
+	int GetDataPointIndex(int i)
 	{
 	    if(i >= Size())
-		return nullptr;
+		return -1;
 
-	    return m_BaseDataSet->Get(m_Index[i]);
+	    return m_Index[i];
 	};
+
+	std::shared_ptr<AbstractDataPoint> GetDataPoint(int i) { return m_BaseDataSet->Get(GetDataPointIndex(i)); };
+	std::shared_ptr<AbstractDataSet> GetDataSet(void) { return m_BaseDataSet; };
     };
 
 } // namespace Kaadugal

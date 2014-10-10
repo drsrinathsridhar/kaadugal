@@ -7,7 +7,8 @@ namespace Kaadugal
 {
     class AbstractDataPoint
     {
-
+    public:
+	virtual ~AbstractDataPoint(void) {};
     };
 
     class AbstractDataSet
@@ -17,7 +18,13 @@ namespace Kaadugal
 
     public:
 	virtual int Size(void) { return m_DataPoints.size(); };
-	virtual std::shared_ptr<AbstractDataPoint> Get(int i) { return m_DataPoints[i]; };
+	virtual std::shared_ptr<AbstractDataPoint> Get(int i)
+	{
+	    if(i < 0)
+		return nullptr;
+
+	    return m_DataPoints[i];
+	};
     };
 } // namespace Kaadugal
 

@@ -11,23 +11,18 @@ namespace Kaadugal
     {
     public:
 	AbstractStatistics(void)
-	    : m_isBuilt(false)
 	{
-	
+	    m_isAggregated = false;
 	};
 	AbstractStatistics(std::shared_ptr<DataSetIndex> DataSetIdx)
 	{
-	    Build(DataSetIdx);
+	    Aggregate(DataSetIdx);
 	};
 
-	void Build(std::shared_ptr<DataSetIndex> DataSetIdx)
-	{
-	    m_isBuilt = true;
-	};
+	virtual void Aggregate(std::shared_ptr<DataSetIndex> DataSetIdx) = 0;
 
-    private:
-	bool m_isBuilt;
-	
+    protected:
+	bool m_isAggregated;	
     };
 } // namespace Kaadugal
 
