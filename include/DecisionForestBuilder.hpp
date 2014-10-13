@@ -88,15 +88,23 @@ namespace Kaadugal
 
 	    for(int i = 0; i < m_TreeBuilders.size(); ++i)
 	    {
-		Success &= m_TreeBuilders[i].Build(m_DataSubsetsIdx[i]);
-		m_Forest.AddTree(m_TreeBuilders[i].GetTree());
+		std::cout << "[ INFO ]: Training tree number " << i << "..." << std::endl;
+		bool TreeSuccess = m_TreeBuilders[i].Build(m_DataSubsetsIdx[i]);
+		Success &= TreeSuccess;
+		if(TreeSuccess)
+		{
+		    m_Forest.AddTree(m_TreeBuilders[i].GetTree());
+		    std::cout << " Done." << std::endl;
+		}
+		else
+		    std::cout << "[ ERROR ]: Problem training tree number " << i << "." << std::endl;
 	    }
 
 	    m_isForestTrained = Success;
 	    return m_isForestTrained;
 	};
 
-	const DecisionForest<T,S,R>& GetForest(void) { return m_Forest; };
+	DecisionForest<T,S,R>& GetForest(void) { return m_Forest; };
 	const bool DoneBuild(void) { return m_isForestTrained; };
     };
 } // namespace Kaadugal

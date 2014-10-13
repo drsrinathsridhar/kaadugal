@@ -9,6 +9,7 @@
 std::string g_ParamFileName;
 std::string g_DataFileName;
 bool g_isTrainMode;
+bool g_isSuccessTrained = false;
 
 void PrintUsage(char * argv[])
 {
@@ -53,15 +54,30 @@ int main(int argc, char * argv[])
 	Kaadugal::DecisionForestBuilder<AAFeatureResponse2D, HistogramStats> ForestBuilder(ForestParams);
 	if(ForestBuilder.Build(Point2DDataPtr) == true)
 	{
+	    g_isSuccessTrained = true;
 	    std::cout << "Random Forest successfully trained." << std::endl;
-	    // int t;
-	    // std::cin >> t;
+
+	    // Now test
+	    if(g_isSuccessTrained)
+	    {
+		std::cout << "Now testing trained forest with sample data..." << std::endl;
+		std::shared_ptr<Kaadugal::AbstractDataPoint> TestPointPtr = std::dynamic_pointer_cast<Kaadugal::AbstractDataPoint>(Point2DData.Get(100));
+		std::shared_ptr<HistogramStats> FinalStatsPtr = std::make_shared<HistogramStats>(HistogramStats(Point2DData.GetNumClasses()));
+		ForestBuilder.GetForest().Test(TestPointPtr, FinalStatsPtr);
+		std::cout << "Num classes: " << FinalStatsPtr->GetNumClasses() << std::endl;
+		std::cout << "Winner: " << FinalStatsPtr->FindWinnerLabelIndex() << std::endl;
+		std::cout << "Actual: " << std::dynamic_pointer_cast<Point2D>(Point2DData.Get(0))->GetLabel() << std::endl;
+
+		// std::cout << ForestBuilder.GetForest().GetNumTrees() << std::endl;
+	    }
+
 	}
 	else
 	    std::cout << "[ ERROR ]: Unable to train forest." << std::endl;
     }
     else
 	std::cout << "[ WARN ]: Tree testing not implemented yet." << std::endl;
+
 
     return 0;
 }

@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 #include "DecisionNode.hpp"
+#include "Abstract/AbstractDataSet.hpp"
 
 namespace Kaadugal
 {
@@ -42,6 +43,32 @@ namespace Kaadugal
 	DecisionNode<T, S, R>& GetNode(int i) { return m_Nodes[i]; };
 	const int GetNumNodes(void) { return m_Nodes.size(); };
 	const int GetMaxDecisionLevels(void) { return m_MaxDecisionLevels; };
+
+	const std::shared_ptr<S> Test(std::shared_ptr<AbstractDataPoint> DataPointPtr)
+	{
+	    // TODO: Handle arbitrary leaf data
+	    if(isValid() == false)
+		std::cout << "[ WARN ]: This tree is invalid. Cannot test data point." << std::endl;
+
+	    S TreeLeafStats;
+	    TestRecursive(DataPointPtr, 0, TreeLeafStats);
+	    
+	    return std::make_shared<S>(TreeLeafStats);
+	};
+
+	void TestRecursive(const std::shared_ptr<AbstractDataPoint>& DataPointPtr, int NodeIndex, S& TreeLeafStats)
+	{
+	    if(m_Nodes[NodeIndex].GetType() == Kaadugal::NodeType::LeafNode) // Termination condition
+	    {
+		TreeLeafStats = m_Nodes[NodeIndex].GetStatistics();
+		return;
+	    }
+
+	    if(m_Nodes[NodeIndex].GetFeatureResponse().GetResponse(DataPointPtr) > m_Nodes[NodeIndex].GetThreshold()) // Go left. This is same logic as in Tree builder, partition
+		TestRecursive(DataPointPtr, 2*NodeIndex+1, TreeLeafStats);
+	    else
+		TestRecursive(DataPointPtr, 2*NodeIndex+2, TreeLeafStats);		
+	};
 
 	bool isValid(void)
 	{

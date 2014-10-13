@@ -37,7 +37,7 @@ namespace Kaadugal
 	    std::vector<int> RightSubsetPts;
 	    for(int i = 0; i < ParentDataSetIdx->Size(); ++i)
 	    {
-		if(Responses[i] > Threshold)
+		if(Responses[i] > Threshold) // Please use same logic when testing the tree
 		    LeftSubsetPts.push_back(ParentDataSetIdx->GetDataPointIndex(i));
 		else
 		    RightSubsetPts.push_back(ParentDataSetIdx->GetDataPointIndex(i));
@@ -53,7 +53,6 @@ namespace Kaadugal
 	    // Section 21.3.3 explains how to implement this threshold selection using quantiles
 	    // Also see the Sherwood Library from Microsoft Research
 	    std::vector<VPFloat> Thresholds(m_Parameters.m_NumCandidateThresholds); // This is different from the Sherwood implementation. We don't use n+1
-	    std::vector<int>::size_type NumThresholds;
 	    std::vector<VPFloat> Quantiles(m_Parameters.m_NumCandidateThresholds + 1); // TODO: Candidate for memory saving
 
 	    // This isn't ideal because if size of data subset is only a few above NumThresh, then Randomizer will repeat some values
@@ -67,6 +66,7 @@ namespace Kaadugal
 	    else
 	    {
 		Quantiles.resize(Responses.size());
+		Thresholds.resize(Responses.size()-1); // One less than quantiles
 		std::copy(Responses.begin(), Responses.end(), Quantiles.begin());
 	    }
 
@@ -79,8 +79,13 @@ namespace Kaadugal
 
 	    // Compute n candidate thresholds by sampling in between n+1 approximate quantiles
 	    std::uniform_real_distribution<VPFloat> UniRealDist(0, 1); // [0, 1), NOTE the exclusive end
+	    int NumThresholds = Thresholds.size();
 	    for(int i = 0; i < NumThresholds; ++i)
 		Thresholds[i] = Quantiles[i] + VPFloat(UniRealDist(Randomizer::Get().GetRNG()) * (Quantiles[i + 1] - Quantiles[i]));
+
+	    // std::cout << "Before return:\n";
+	    // for(int j = 0; j < Thresholds.size(); ++j)
+	    // 	std::cout << "Thresh: " << Thresholds[j] << std::endl;
 
 	    return Thresholds;
 	};
@@ -131,11 +136,19 @@ namespace Kaadugal
 
 		const std::vector<VPFloat>& Thresholds = SelectThresholds(PartitionedDataSetIdx, Responses);
 		int NumThresholds = Thresholds.size();
-		
+
 		for(int j = 0; j < NumThresholds; ++j)
 		{
 		    // First partition data based on current splitting candidates
-		    std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets = Partition(PartitionedDataSetIdx, Responses, Thresholds[i]);
+		    std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets = Partition(PartitionedDataSetIdx, Responses, Thresholds[j]);
+		    // if(Subsets.first->Size() == 0 || Subsets.second->Size() == 0)
+		    // {
+		    // 	std::cout << "Parent size: " << PartitionedDataSetIdx->Size() << std::endl;
+		    // 	std::cout << "Left size: " << Subsets.first->Size() << std::endl;
+		    // 	std::cout << "Right size: " << Subsets.second->Size() << std::endl;
+		    // 	std::cout << "Problem: " << j << ", " << i << "\n";
+		    // 	return false;
+		    // }
 
 		    S LeftNodeStats(Subsets.first);
 		    S RightNodeStats(Subsets.second);
@@ -143,35 +156,24 @@ namespace Kaadugal
 		    // Then compute some objective function value. Examples: information gain, Geni index
 		    VPFloat ObjVal = GetObjectiveValue(ParentNodeStats, LeftNodeStats, RightNodeStats);
 
-		    if(ObjVal > OptObjVal)
+		    if(ObjVal >= OptObjVal)
 		    {
 			OptObjVal = ObjVal;
 			OptFeatureResponse = FeatureResponse;
 			OptThreshold = Thresholds[i];
 			OptLeftPartitionIdx = Subsets.first;
 			OptRightPartitionIdx = Subsets.second;
-			OptLeftNodeStats = LeftNodeStats;
+			OptLeftNodeStats = LeftNodeStats; // TODO: Overload = operator
 			OptRightNodeStats = RightNodeStats;
 		    }
 		}
 	    }
 
 	    // Check for some recursion termination conditions
-	    // 1. No gain
-	    if(OptObjVal <= 0.0)
+	    // No gain or very small gain
+	    if(OptObjVal == 0.0 || OptObjVal < 0.01) // TODO: This number maybe different for different problems. So this needs to go somewhere else.
 	    {
-		// Zero gain here which is bad. 
-		std::cout << "[ WARN ]: No gain for any of the splitting candidates. Making leaf node..." << std::endl;
-	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
-		return true;
-	    }
-
-	    // TODO: This number maybe different for different problems. So this needs to go somewhere else.
-	    // 2. Gain too small
-	    if(OptObjVal < 0.01)
-	    {
-		// Zero gain here which is bad. 
-		std::cout << "[ WARN ]: Gain is too small. Making leaf node..." << std::endl;
+		std::cout << "[ INFO ]: No gain or very small gain for all splitting candidates. Making leaf node..." << std::endl;
 	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 		return true;
 	    }
@@ -183,8 +185,14 @@ namespace Kaadugal
 	    // Now recurse :)
 	    // Since we store the decision tree as a full binary tree (in
 	    // breadth-first order) we can easily get the left and right children indices
-	    BuildTreeDepthFirst(OptLeftPartitionIdx, 2*NodeIndex+1, CurrentNodeDepth+1);
-	    BuildTreeDepthFirst(OptRightPartitionIdx, 2*NodeIndex+2, CurrentNodeDepth+1);
+	    if(OptLeftPartitionIdx->Size() > 0)
+		BuildTreeDepthFirst(OptLeftPartitionIdx, 2*NodeIndex+1, CurrentNodeDepth+1);
+	    else
+		std::cout << "[ WARN ]: No data so not recusring" << std::endl;
+	    if(OptRightPartitionIdx->Size() > 0)
+		BuildTreeDepthFirst(OptRightPartitionIdx, 2*NodeIndex+2, CurrentNodeDepth+1);
+	    else
+		std::cout << "[ WARN ]: No data so not recusring" << std::endl;
 	    	    
 	    return true;
 	};
@@ -192,7 +200,9 @@ namespace Kaadugal
 	VPFloat GetObjectiveValue(S& ParentStats, S& LeftStats, S& RightStats)
 	{
 	    // Statistics are already aggregated
-	    if(!ParentStats.isAggregated() || !LeftStats.isAggregated() || !RightStats.isAggregated())
+	    // TODO: What if they are not aggregated?
+
+	    if(ParentStats.GetNumDataPoints() <= 0)
 		return 0.0;
 
 	    // NOTE: We are using information gain as the objective function
@@ -201,6 +211,8 @@ namespace Kaadugal
 	    VPFloat InformationGain = ParentStats.GetEntropy()
 		- ( VPFloat(LeftStats.GetNumDataPoints())  * LeftStats.GetEntropy()
 		    + VPFloat(RightStats.GetNumDataPoints()) * RightStats.GetEntropy() ) / VPFloat(ParentStats.GetNumDataPoints());
+
+	    // std::cout << "InfoGain: " << InformationGain << std::endl;
 
 	    return InformationGain;
 	};

@@ -71,6 +71,8 @@ namespace Kaadugal
 
 	const R& GetLeafData(void) { return m_Data; };
 	const S& GetStatistics(void) { return m_Statistics; };
+	T& GetFeatureResponse(void) { return m_FeatureResponse; };
+	const VPFloat& GetThreshold(void) { return m_Threshold; };
 	const Kaadugal::NodeType GetType(void) { return m_Type; };
 
 	// Stream write methods
