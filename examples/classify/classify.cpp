@@ -61,12 +61,13 @@ int main(int argc, char * argv[])
 	    if(g_isSuccessTrained)
 	    {
 		std::cout << "Now testing trained forest with sample data..." << std::endl;
-		std::shared_ptr<Kaadugal::AbstractDataPoint> TestPointPtr = std::dynamic_pointer_cast<Kaadugal::AbstractDataPoint>(Point2DData.Get(100));
+		int DataPtNum = 354; // PARAM
+		std::shared_ptr<Kaadugal::AbstractDataPoint> TestPointPtr = std::dynamic_pointer_cast<Kaadugal::AbstractDataPoint>(Point2DData.Get(DataPtNum));
 		std::shared_ptr<HistogramStats> FinalStatsPtr = std::make_shared<HistogramStats>(HistogramStats(Point2DData.GetNumClasses()));
 		ForestBuilder.GetForest().Test(TestPointPtr, FinalStatsPtr);
 		std::cout << "Num classes: " << FinalStatsPtr->GetNumClasses() << std::endl;
 		std::cout << "Winner: " << FinalStatsPtr->FindWinnerLabelIndex() << std::endl;
-		std::cout << "Actual: " << std::dynamic_pointer_cast<Point2D>(Point2DData.Get(0))->GetLabel() << std::endl;
+		std::cout << "Actual: " << std::dynamic_pointer_cast<Point2D>(Point2DData.Get(DataPtNum))->GetLabel() << std::endl;
 
 		// std::cout << ForestBuilder.GetForest().GetNumTrees() << std::endl;
 	    }

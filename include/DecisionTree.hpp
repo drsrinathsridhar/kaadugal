@@ -53,6 +53,9 @@ namespace Kaadugal
 	    S TreeLeafStats;
 	    TestRecursive(DataPointPtr, 0, TreeLeafStats);
 	    
+	    // std::cout << "Num classes: " << TreeLeafStats.GetNumClasses() << std::endl;
+	    // std::cout << "Winner: " << TreeLeafStats.FindWinnerLabelIndex() << std::endl;
+	    
 	    return std::make_shared<S>(TreeLeafStats);
 	};
 
@@ -66,7 +69,7 @@ namespace Kaadugal
 
 	    if(m_Nodes[NodeIndex].GetFeatureResponse().GetResponse(DataPointPtr) > m_Nodes[NodeIndex].GetThreshold()) // Go left. This is same logic as in Tree builder, partition
 		TestRecursive(DataPointPtr, 2*NodeIndex+1, TreeLeafStats);
-	    else
+	    else // Go right
 		TestRecursive(DataPointPtr, 2*NodeIndex+2, TreeLeafStats);		
 	};
 
