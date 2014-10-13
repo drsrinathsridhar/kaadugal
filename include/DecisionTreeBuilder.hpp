@@ -124,7 +124,7 @@ namespace Kaadugal
 	    // Initialize optimal values
 	    VPFloat OptObjVal = 0.0;
 	    T OptFeatureResponse; // This creates an empty feature response with random response
-	    VPFloat OptThreshold;
+	    VPFloat OptThreshold = 0.0;
 	    std::shared_ptr<DataSetIndex> OptLeftPartitionIdx;
 	    std::shared_ptr<DataSetIndex> OptRightPartitionIdx;
 	    S OptLeftNodeStats;
@@ -143,7 +143,8 @@ namespace Kaadugal
 		int NumThresholds = Thresholds.size();
 		// for(int j = 0; j < NumThresholds; ++j)
 		//     std::cout << Thresholds[j] << "\t";
-
+		// std::cout << std::endl;
+		
 		for(int j = 0; j < NumThresholds; ++j)
 		{
 		    // First partition data based on current splitting candidates
@@ -167,7 +168,7 @@ namespace Kaadugal
 		    {
 			OptObjVal = ObjVal;
 			OptFeatureResponse = FeatureResponse;
-			OptThreshold = Thresholds[i];
+			OptThreshold = Thresholds[j];
 			OptLeftPartitionIdx = Subsets.first;
 			OptRightPartitionIdx = Subsets.second;
 			OptLeftNodeStats = LeftNodeStats; // TODO: Overload = operator
@@ -194,6 +195,8 @@ namespace Kaadugal
 	    // 	std::cout << "R3: " << OptRightNodeStats.GetProbability(3) << std::endl;
 
 	    // 	std::cout << "\nOptGain: " << OptObjVal << std::endl;
+	    // 	std::cout << "OptFeatResponse: " << OptFeatureResponse.GetSelectedFeature() << std::endl;
+	    // 	std::cout << "OptThreshold: " << OptThreshold << std::endl;
 	    // }
 
 	    // Check for some recursion termination conditions
