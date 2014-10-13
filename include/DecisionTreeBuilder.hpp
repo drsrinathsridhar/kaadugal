@@ -109,6 +109,11 @@ namespace Kaadugal
 	bool BuildTreeDepthFirst(std::shared_ptr<DataSetIndex> PartitionedDataSetIdx, int NodeIndex, int CurrentNodeDepth)
 	{
 	    S ParentNodeStats(PartitionedDataSetIdx);
+	    // std::cout << ParentNodeStats.GetNumDataPoints() << std::endl;
+	    // std::cout << ParentNodeStats.GetProbability(0) << std::endl;
+	    // std::cout << ParentNodeStats.FindWinnerLabelIndex() << std::endl;
+	    // return true;
+
 	    if(CurrentNodeDepth >= m_Tree->GetMaxDecisionLevels()) // Both are zero-indexed
 	    {
 		std::cout << "[ INFO ]: Terminating splitting at maximum tree depth." << std::endl;
@@ -118,8 +123,8 @@ namespace Kaadugal
 
 	    // Initialize optimal values
 	    VPFloat OptObjVal = 0.0;
-	    T OptFeatureResponse; // This should create empty feature response
-	    VPFloat OptThreshold = std::numeric_limits<VPFloat>::epsilon(); // Is this the best way?
+	    T OptFeatureResponse; // This creates an empty feature response with random response
+	    VPFloat OptThreshold;
 	    std::shared_ptr<DataSetIndex> OptLeftPartitionIdx;
 	    std::shared_ptr<DataSetIndex> OptRightPartitionIdx;
 	    S OptLeftNodeStats;
@@ -128,7 +133,7 @@ namespace Kaadugal
 	    // TODO: Candidate for parallelization
 	    for(int i = 0; i < m_Parameters.m_NumCandidateFeatures; ++i)
 	    {
-		T FeatureResponse; // This should sample from possible elements in the feature response set
+		T FeatureResponse; // This creates an empty feature response with random response
 		std::vector<VPFloat> Responses;
 		int DataSetSize = PartitionedDataSetIdx->Size();
 		for(int k = 0; k < DataSetSize; ++k)
@@ -136,6 +141,8 @@ namespace Kaadugal
 
 		const std::vector<VPFloat>& Thresholds = SelectThresholds(PartitionedDataSetIdx, Responses);
 		int NumThresholds = Thresholds.size();
+		// for(int j = 0; j < NumThresholds; ++j)
+		//     std::cout << Thresholds[j] << "\t";
 
 		for(int j = 0; j < NumThresholds; ++j)
 		{
@@ -169,6 +176,26 @@ namespace Kaadugal
 		}
 	    }
 
+	    // std::cout << "\n--------------------------------\n" << "Depth Level: " << CurrentNodeDepth << "\n--------------------------------\n";
+	    // {
+	    // 	std::cout << "Parent size: " << PartitionedDataSetIdx->Size() << std::endl;
+	    // 	std::cout << "Left size: " << OptLeftPartitionIdx->Size() << std::endl;
+	    // 	std::cout << "Right size: " << OptRightPartitionIdx->Size() << std::endl;
+	    // 	std::cout << "L0: " << OptLeftNodeStats.GetProbability(0) << std::endl;
+	    // 	std::cout << "L1: " << OptLeftNodeStats.GetProbability(1) << std::endl;
+	    // 	std::cout << "L2: " << OptLeftNodeStats.GetProbability(2) << std::endl;
+	    // 	std::cout << "L3: " << OptLeftNodeStats.GetProbability(3) << std::endl;
+
+	    // 	std::cout << std::endl;
+		
+	    // 	std::cout << "R0: " << OptRightNodeStats.GetProbability(0) << std::endl;
+	    // 	std::cout << "R1: " << OptRightNodeStats.GetProbability(1) << std::endl;
+	    // 	std::cout << "R2: " << OptRightNodeStats.GetProbability(2) << std::endl;
+	    // 	std::cout << "R3: " << OptRightNodeStats.GetProbability(3) << std::endl;
+
+	    // 	std::cout << "\nOptGain: " << OptObjVal << std::endl;
+	    // }
+
 	    // Check for some recursion termination conditions
 	    // No gain or very small gain
 	    if(OptObjVal == 0.0 || OptObjVal < 0.01) // TODO: This number maybe different for different problems. So this needs to go somewhere else.
@@ -189,6 +216,7 @@ namespace Kaadugal
 		BuildTreeDepthFirst(OptLeftPartitionIdx, 2*NodeIndex+1, CurrentNodeDepth+1);
 	    else
 		std::cout << "[ WARN ]: No data so not recusring" << std::endl;
+
 	    if(OptRightPartitionIdx->Size() > 0)
 		BuildTreeDepthFirst(OptRightPartitionIdx, 2*NodeIndex+2, CurrentNodeDepth+1);
 	    else

@@ -25,6 +25,7 @@ namespace Kaadugal
 	};
 
 	virtual int Size(void) { return m_Index.size(); };
+	// Get index in original dataset
 	int GetDataPointIndex(int i)
 	{
 	    if(i >= Size())

@@ -52,6 +52,10 @@ namespace Kaadugal
 
 	    S TreeLeafStats;
 	    TestRecursive(DataPointPtr, 0, TreeLeafStats);
+	    // std::cout << "0: " << TreeLeafStats.GetProbability(0) << std::endl;
+	    // std::cout << "1: " << TreeLeafStats.GetProbability(1) << std::endl;
+	    // std::cout << "2: " << TreeLeafStats.GetProbability(2) << std::endl;
+	    // std::cout << "3: " << TreeLeafStats.GetProbability(3) << std::endl;
 	    
 	    // std::cout << "Num classes: " << TreeLeafStats.GetNumClasses() << std::endl;
 	    // std::cout << "Winner: " << TreeLeafStats.FindWinnerLabelIndex() << std::endl;
@@ -67,6 +71,8 @@ namespace Kaadugal
 		return;
 	    }
 
+	    // std::cout << "Response: " << m_Nodes[NodeIndex].GetFeatureResponse().GetResponse(DataPointPtr) << std::endl;
+	    // std::cout << "Threshold: " << m_Nodes[NodeIndex].GetThreshold() << std::endl << std::endl;
 	    if(m_Nodes[NodeIndex].GetFeatureResponse().GetResponse(DataPointPtr) > m_Nodes[NodeIndex].GetThreshold()) // Go left. This is same logic as in Tree builder, partition
 		TestRecursive(DataPointPtr, 2*NodeIndex+1, TreeLeafStats);
 	    else // Go right
