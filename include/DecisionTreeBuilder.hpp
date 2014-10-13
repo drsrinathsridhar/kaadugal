@@ -161,12 +161,20 @@ namespace Kaadugal
 	    if(OptObjVal <= 0.0)
 	    {
 		// Zero gain here which is bad. 
-		std::cout << "[ WARN ]: No gain for any of the splitting candidates" << std::endl;
+		std::cout << "[ WARN ]: No gain for any of the splitting candidates. Making leaf node..." << std::endl;
 	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 		return true;
 	    }
 
-	    // 2. TODO: Stop recursion if gain is too little
+	    // TODO: This number maybe different for different problems. So this needs to go somewhere else.
+	    // 2. Gain too small
+	    if(OptObjVal < 0.01)
+	    {
+		// Zero gain here which is bad. 
+		std::cout << "[ WARN ]: Gain is too small. Making leaf node..." << std::endl;
+	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
+		return true;
+	    }
 
 	    // Now free to make a split node
 	    m_Tree->GetNode(NodeIndex).MakeSplitNode(ParentNodeStats, OptFeatureResponse, OptThreshold);

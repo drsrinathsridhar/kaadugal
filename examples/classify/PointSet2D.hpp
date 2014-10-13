@@ -30,7 +30,7 @@ public:
 
     friend std::ostream& operator<<(std::ostream &s, const Point2D &p)
     {
-	s << "[ " << p.m_x << ", " << p.m_y << "]: " << p.m_ClassLabel << "\n";
+	s << "[ " << p.m_x << ", " << p.m_y << " ]: " << p.m_ClassLabel << "\n";
 	return s;
     };
 
