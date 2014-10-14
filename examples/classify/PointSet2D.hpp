@@ -48,7 +48,7 @@ public:
 	Deserialize(DataFileName);
     };
 
-    const int GetNumClasses(void) { return m_NumClassLabels; };
+    const int& GetNumClasses(void) { return m_NumClassLabels; };
 
     void Deserialize(const std::string& DataFileName)
     {

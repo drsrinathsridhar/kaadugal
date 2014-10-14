@@ -18,6 +18,7 @@ namespace Kaadugal
     private:
 	std::vector<DecisionNode<T, S, R>> m_Nodes;
 	int m_MaxDecisionLevels; // The root node is level 0
+	int m_NumNodes;
 
     public:
 	DecisionTree(int MaxDecisionLevels)
@@ -36,13 +37,14 @@ namespace Kaadugal
 
 	    // NOTE: Will crash if this exceeds available system memory
 	    m_Nodes.resize( (1 << (MaxDecisionLevels + 1)) - 1 ); // 2^(l+1) - 1
+	    m_NumNodes = m_Nodes.size();
 	};
 
 	const std::vector<DecisionNode<T, S, R>>& GetAllNodes(void) { return m_Nodes; };
 	const DecisionNode<T, S, R>& GetNode(int i) const { return m_Nodes[i]; }; // Read-only
 	DecisionNode<T, S, R>& GetNode(int i) { return m_Nodes[i]; };
-	const int GetNumNodes(void) { return m_Nodes.size(); };
-	const int GetMaxDecisionLevels(void) { return m_MaxDecisionLevels; };
+	const int& GetNumNodes(void) { return m_NumNodes; };
+	const int& GetMaxDecisionLevels(void) { return m_MaxDecisionLevels; };
 
 	const std::shared_ptr<S> Test(std::shared_ptr<AbstractDataPoint> DataPointPtr)
 	{

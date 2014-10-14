@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #include "Kaadugal.hpp"
 #include "DecisionForestBuilder.hpp"
@@ -62,16 +63,18 @@ int main(int argc, char * argv[])
 	    {
 		std::cout << "Now testing trained forest with sample data..." << std::endl;
 		int SuccessCtr = 0;
-		int Total = 100;
+		int Total = 400;
+		std::fstream TestFile("TestOut.dat", std::ios::in | std::ios::out | std::ios::trunc);	
 		for(int i = 0; i < Total; ++i)
 		{
 		    std::uniform_int_distribution<int> UniDist(0, Point2DData.Size() - 1); // Both inclusive
 		    int DataPtNum = UniDist(Kaadugal::Randomizer::Get().GetRNG());
-		    std::uniform_real_distribution<Kaadugal::VPFloat> UniRealDist(0, 150.0); // [0, 10)
+		    std::uniform_real_distribution<Kaadugal::VPFloat> UniRealDist(-100, 100.0); // [0, 10)
 		    std::cout << "Test point (before perturb): " << std::dynamic_pointer_cast<Point2D>(Point2DData.Get(DataPtNum))->m_x << ", " << std::dynamic_pointer_cast<Point2D>(Point2DData.Get(DataPtNum))->m_y << std::endl;
 		    std::dynamic_pointer_cast<Point2D>(Point2DData.Get(DataPtNum))->m_x = std::dynamic_pointer_cast<Point2D>(Point2DData.Get(DataPtNum))->m_x + UniRealDist(Kaadugal::Randomizer::Get().GetRNG());
 		    std::dynamic_pointer_cast<Point2D>(Point2DData.Get(DataPtNum))->m_y = std::dynamic_pointer_cast<Point2D>(Point2DData.Get(DataPtNum))->m_y + UniRealDist(Kaadugal::Randomizer::Get().GetRNG());
 		    std::cout << "Test point (after perturb): " << std::dynamic_pointer_cast<Point2D>(Point2DData.Get(DataPtNum))->m_x << ", " << std::dynamic_pointer_cast<Point2D>(Point2DData.Get(DataPtNum))->m_y << std::endl;
+
 		    std::shared_ptr<Kaadugal::AbstractDataPoint> TestPointPtr = std::dynamic_pointer_cast<Kaadugal::AbstractDataPoint>(Point2DData.Get(DataPtNum));
 		    std::shared_ptr<HistogramStats> FinalStatsPtr = std::make_shared<HistogramStats>(HistogramStats(Point2DData.GetNumClasses()));
 		    ForestBuilder.GetForest().Test(TestPointPtr, FinalStatsPtr);
@@ -79,7 +82,16 @@ int main(int argc, char * argv[])
 		    std::cout << "Actual: " << std::dynamic_pointer_cast<Point2D>(Point2DData.Get(DataPtNum))->GetLabel() << std::endl;
 		    if(FinalStatsPtr->FindWinnerLabelIndex() == std::dynamic_pointer_cast<Point2D>(Point2DData.Get(DataPtNum))->GetLabel())
 			SuccessCtr++;
+
+		    // Write to file
+		    if(TestFile.is_open())
+		    {
+			TestFile << std::dynamic_pointer_cast<Point2D>(Point2DData.Get(DataPtNum))->m_x
+				 << " " << std::dynamic_pointer_cast<Point2D>(Point2DData.Get(DataPtNum))->m_y
+				 << " " << FinalStatsPtr->FindWinnerLabelIndex() << std::endl;
+		    }
 		}
+		TestFile.close();
 		std::cout << "Classification Accuracy: " << float(SuccessCtr) / float(Total) * 100.0 << std::endl;
 	    }
 

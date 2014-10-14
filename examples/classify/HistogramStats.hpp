@@ -34,8 +34,8 @@ public:
 	Aggregate(DataSetIdx);
     };
 
-    const int GetNumClasses(void) const { return m_nClasses; };
-    const int GetNumDataPoints(void) const { return m_nDataPoints; };
+    const int& GetNumClasses(void) const { return m_nClasses; };
+    const int& GetNumDataPoints(void) const { return m_nDataPoints; };
     const std::vector<int>& GetBins(void) const { return m_Bins; };
 
     virtual void Aggregate(std::shared_ptr<Kaadugal::DataSetIndex> DataSetIdx) override

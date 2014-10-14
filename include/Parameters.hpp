@@ -48,6 +48,8 @@ namespace Kaadugal
 	    m_NumCandidateThresholds = RHS.m_NumCandidateThresholds;
 	    m_TrainMethod = RHS.m_TrainMethod;
 	    m_isValid = RHS.m_isValid;
+
+	    return *this;
         };
 
 	void Serialize(const std::string& ParameterFile)
@@ -63,7 +65,6 @@ namespace Kaadugal
 		// Read parameters from file
 		m_isValid = true;
 		std::string Line;
-		int ConfigCtr = 0; // Counts how many of the minimum configurations are present. Throw error otherwise.
 		while(std::getline(ParamFile, Line))
 		{
 		    // Skip empty lines or lines beginning with #

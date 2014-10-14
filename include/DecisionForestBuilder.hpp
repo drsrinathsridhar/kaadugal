@@ -25,7 +25,7 @@ namespace Kaadugal
 	DecisionForest<T,S,R> m_Forest;
 	bool m_isForestTrained;
 
-	bool RandomPartition(void)
+	void RandomPartition(void)
 	{
 	    int SetSize = m_DataSet->Size();
 	    // Create an indices set with all indices
@@ -86,7 +86,7 @@ namespace Kaadugal
 
 	    RandomPartition(); // Randomly partition data set into NumTrees subsets
 
-	    for(int i = 0; i < m_TreeBuilders.size(); ++i)
+	    for(int i = 0; i < int(m_TreeBuilders.size()); ++i)
 	    {
 		std::cout << "[ INFO ]: Training tree number " << i << "..." << std::endl;
 		bool TreeSuccess = m_TreeBuilders[i].Build(m_DataSubsetsIdx[i]);
@@ -105,7 +105,7 @@ namespace Kaadugal
 	};
 
 	DecisionForest<T,S,R>& GetForest(void) { return m_Forest; };
-	const bool DoneBuild(void) { return m_isForestTrained; };
+	bool DoneBuild(void) { return m_isForestTrained; };
     };
 } // namespace Kaadugal
 

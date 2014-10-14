@@ -252,16 +252,18 @@ namespace Kaadugal
 	{
 	    // TODO:
 	    std::cout << "[ INFO ]: BuildTreeBreadthFirst() is not yet implemented." << std::endl;
+	    return false;
 	};
 
 	bool BuildTreeHybrid(void)
 	{
 	    // TODO:
 	    std::cout << "[ INFO ]: BuildTreeHybrid() is not yet implemented." << std::endl;
+	    return false;
 	};
 
-	const std::shared_ptr<DecisionTree<T, S, R>> GetTree(void) { return m_Tree; };
-	const bool DoneBuild(void) { return m_isTreeTrained; };
+	std::shared_ptr<DecisionTree<T, S, R>> GetTree(void) { return m_Tree; };
+	bool DoneBuild(void) { return m_isTreeTrained; };
     };
 } // namespace Kaadugal
 
