@@ -1,6 +1,8 @@
 # About
 
-NOTE: This library isn't fully implemented yet. I am actively working on it though and hope to finish soon.
+## NEWS
+### [15-Oct-2014]: Classification forests are done! See below for usage example.
+### [1-Oct-2014]: This library isn't fully implemented yet. I am actively working on it though and hope to finish soon.
 
 Kaadugal is a parallelized multi-core C++ implementation of the random forests
 algorithm for classification, regression, and structured prediction problems.
@@ -34,13 +36,13 @@ $ make
 To run the example classification problem first learn the forest:
 
 ```bash
-./classify train <CONFIG> ../examples/data/<DATA>
+./classify train ../examples/config/<CONFIG_FILE> <OUTPUT_FOREST_PATH> ../examples/data/<DATA_FILE>
 ```
 
 Then test the forest on input data using
 
 ```bash
-./classify test <CONFIG> ../examples/data/<DATA>
+./classify test <INPUT_FOREST_PATH> ../examples/data/<DATA_FILE>
 ```
 
 # Contact
