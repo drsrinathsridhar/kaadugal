@@ -47,8 +47,7 @@ namespace Kaadugal
 	{
 	    int nTrees = 0;
 	    InputStream.read((char *)(&nTrees), sizeof(int));
-	    std::cout << "Num Trees: " << nTrees << std::endl;
-	    for(int i = 0; i < m_nTrees; ++i)
+	    for(int i = 0; i < nTrees; ++i)
 	    {
 		auto Tree = std::shared_ptr<DecisionTree<T, S, R>>(new DecisionTree<T, S, R>(0)); // Create empty tree
 		Tree->Deserialize(InputStream);

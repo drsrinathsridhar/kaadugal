@@ -111,7 +111,7 @@ int Test(void)
     for(int i = 0; i < DataSize; ++i)
     {
 	std::shared_ptr<Kaadugal::AbstractDataPoint> TestPointPtr = std::dynamic_pointer_cast<Kaadugal::AbstractDataPoint>(g_Point2DData.Get(i));
-	std::shared_ptr<HistogramStats> FinalStatsPtr = std::make_shared<HistogramStats>(HistogramStats(g_Point2DData.GetNumClasses()));
+	std::shared_ptr<HistogramStats> FinalStatsPtr = std::make_shared<HistogramStats>(HistogramStats(4));
 	LoadedForest.Test(TestPointPtr, FinalStatsPtr);
 	// std::cout << "Winner: " << FinalStatsPtr->FindWinnerLabelIndex() << std::endl;
 	// std::cout << "Actual: " << std::dynamic_pointer_cast<Point2D>(g_Point2DData.Get(DataPtNum))->GetLabel() << std::endl;
