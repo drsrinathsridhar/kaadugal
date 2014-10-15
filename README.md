@@ -34,13 +34,13 @@ $ make
 To run the example classification problem first learn the forest:
 
 ```bash
-./classify learn ../examples/data/<DATA> <CONFIG>
+./classify train <CONFIG> ../examples/data/<DATA>
 ```
 
 Then test the forest on input data using
 
 ```bash
-./classify test ../examples/data/<DATA> <CONFIG>
+./classify test <CONFIG> ../examples/data/<DATA>
 ```
 
 # Contact

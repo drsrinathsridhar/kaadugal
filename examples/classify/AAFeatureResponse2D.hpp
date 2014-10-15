@@ -9,6 +9,7 @@
 class AAFeatureResponse2D : public Kaadugal::AbstractFeatureResponse
 {
 private:
+    // NOTE: If new members are added, remember to add them to serialize/deserialize
     std::uniform_int_distribution<int> m_UniDist; // Both inclusive
     int m_SelectedFeature;
 
@@ -33,6 +34,14 @@ public:
 	return ( m_SelectedFeature==0?PointIn2D->m_x:PointIn2D->m_y );
     };
 
+    virtual void Serialize(std::ostream& OutputStream) override
+    {
+	OutputStream.write((const char *)(&m_SelectedFeature), sizeof(int));
+    };
+    virtual void Deserialize(std::istream& InputStream) override
+    {
+	InputStream.read((char *)(&m_SelectedFeature), sizeof(int));
+    };
 };
 
 #endif // _AAFEATRERESPONSE2D_HPP_

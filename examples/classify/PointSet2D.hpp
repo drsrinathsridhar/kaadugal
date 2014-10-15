@@ -35,6 +35,18 @@ public:
 	return s;
     };
 
+    // virtual void Serialize(std::ostream& OutputStream) override
+    // {
+    // 	OutputStream.write((const char *)(&m_x), sizeof(Kaadugal::VPFloat));
+    // 	OutputStream.write((const char *)(&m_y), sizeof(Kaadugal::VPFloat));
+    // 	OutputStream.write((const char *)(&m_ClassLabel), sizeof(int));
+    // };
+    // virtual void Deserialize(std::istream& InputStream) override
+    // {
+    // 	InputStream.read((char *)(&m_x), sizeof(Kaadugal::VPFloat));
+    // 	InputStream.read((char *)(&m_y), sizeof(Kaadugal::VPFloat));
+    // 	InputStream.read((char *)(&m_ClassLabel), sizeof(int));
+    // };
 };
 
 class PointSet2D : public Kaadugal::AbstractDataSet
@@ -45,65 +57,74 @@ public:
     PointSet2D(void) {};
     PointSet2D(const std::string& DataFileName)
     {
-	Deserialize(DataFileName);
+	// This is in human-readable format
+	std::filebuf DataFile;
+	DataFile.open(DataFileName, std::ios::in);
+	if(DataFile.is_open())
+	{
+	    std::istream OutputFileStream(&DataFile);
+	    Deserialize(OutputFileStream);
+	    DataFile.close();
+	}
+	else
+	    std::cout << "[ WARN ]: Unable to open file: " << DataFileName << std::endl;
     };
 
     const int& GetNumClasses(void) { return m_NumClassLabels; };
 
-    void Deserialize(const std::string& DataFileName)
+    virtual void Serialize(std::ostream& OutputStream) override
     {
-	std::fstream DataFile(DataFileName, std::ios::in);
-	if(DataFile.is_open())
+	// This is in human-readable format
+	// TODO:
+    };
+    virtual void Deserialize(std::istream& InputStream) override
+    {
+	// This is in human-readable format
+	// PointSet2D data files have either 2 or 3 columns per element in the set
+	// First Col: x; Second Col: y[, Third Col: Class Label]
+	std::string Line;
+	std::set<int> ClassSet;
+	while(std::getline(InputStream, Line))
 	{
-	    // PointSet2D data files have either 2 or 3 columns per element in the set
-	    // First Col: x; Second Col: y[, Third Col: Class Label]
-	    std::string Line;
-	    std::set<int> ClassSet;
-	    while(std::getline(DataFile, Line))
+	    // Skip empty lines or lines beginning with #
+	    if(Line.size() < 1)
+		continue;
+	    if(Line.data()[0] == '#') // Comment lines
+		continue;
+	    
+	    std::stringstream ss(Line);
+	    std::vector<std::string> Cols;
+	    std::string Tmp;
+	    while(ss >> Tmp)
+		Cols.push_back(Tmp);
+
+	    Point2D Row;
+	    if(Cols.size() == 2)
 	    {
-		// Skip empty lines or lines beginning with #
-		if(Line.size() < 1)
-		    continue;
-		if(Line.data()[0] == '#') // Comment lines
-		    continue;
-
-		std::stringstream ss(Line);
-		std::vector<std::string> Cols;
-		std::string Tmp;
-		while(ss >> Tmp)
-		    Cols.push_back(Tmp);
-
-		Point2D Row;
-		if(Cols.size() == 2)
-		{
-		    Row = Point2D(std::atof(Cols[0].c_str())
-					  , std::atof(Cols[1].c_str())
-			);
-		}
-		else if(Cols.size() == 3)
-		{	
-		    int ClassLabel = std::atoi(Cols[2].c_str());  // Input labels are ALWAYS indexed from 0
-		    ClassSet.insert(ClassLabel);
-		    Row = Point2D(std::atof(Cols[0].c_str())
-				  , std::atof(Cols[1].c_str())
-				  , ClassLabel
-			);
-		}
-		else
-		{
-		    std::cout << "[ ERROR ]: Invalid data file. Aborting." << std::endl;
-		    m_DataPoints.clear();
-		    break;
-		}
-		// std::cout << Row;
-		m_DataPoints.push_back(std::make_shared<Point2D>(Row));
+		Row = Point2D(std::atof(Cols[0].c_str())
+			      , std::atof(Cols[1].c_str())
+		    );
 	    }
-	    m_NumClassLabels = ClassSet.size();
-	    std::cout << "[ INFO ]: Finished reading input data. Total number of classes: " << m_NumClassLabels << std::endl;
+	    else if(Cols.size() == 3)
+	    {	
+		int ClassLabel = std::atoi(Cols[2].c_str());  // Input labels are ALWAYS indexed from 0
+		ClassSet.insert(ClassLabel);
+		Row = Point2D(std::atof(Cols[0].c_str())
+			      , std::atof(Cols[1].c_str())
+			      , ClassLabel
+		    );
+	    }
+	    else
+	    {
+		std::cout << "[ ERROR ]: Invalid data file. Aborting." << std::endl;
+		m_DataPoints.clear();
+		break;
+	    }
+	    // std::cout << Row;
+	    m_DataPoints.push_back(std::make_shared<Point2D>(Row));
 	}
-	else
-	    std::cout << "[ WARN ]: Unable to open file: " << DataFileName << std::endl;
-
+	m_NumClassLabels = ClassSet.size();
+	std::cout << "[ INFO ]: Finished reading input data. Total number of classes: " << m_NumClassLabels << std::endl;
     };
 };
 

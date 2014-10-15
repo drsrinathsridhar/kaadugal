@@ -10,6 +10,7 @@
 class HistogramStats : public Kaadugal::AbstractStatistics
 {
 protected:
+    // NOTE: If new members are added, remember to add them to serialize/deserialize
     int m_nClasses; // This is also the number of bins
     std::vector<int> m_Bins;
     int m_nDataPoints;
@@ -32,6 +33,29 @@ public:
     HistogramStats(std::shared_ptr<Kaadugal::DataSetIndex> DataSetIdx)
     {
 	Aggregate(DataSetIdx);
+    };
+
+    virtual void Serialize(std::ostream& OutputStream) override
+    {
+	OutputStream.write((const char *)(&m_nClasses), sizeof(int));
+	OutputStream.write((const char *)(&m_nDataPoints), sizeof(int));
+
+	int BinVecSize = m_Bins.size();
+	OutputStream.write((const char *)(&BinVecSize), sizeof(int));
+	for(int i = 0; i < BinVecSize; ++i)
+	    OutputStream.write((const char *)(&m_Bins[i]), sizeof(int));
+    };
+
+    virtual void Deserialize(std::istream& InputStream) override
+    {
+	InputStream.read((char *)(&m_nClasses), sizeof(int));
+	InputStream.read((char *)(&m_nDataPoints), sizeof(int));
+
+	int BinVecSize = 0;
+	InputStream.read((char *)(&BinVecSize), sizeof(int));
+	m_Bins.resize(BinVecSize, 0);
+	for(int i = 0; i < BinVecSize; ++i)
+	    InputStream.read((char *)(&m_Bins[i]), sizeof(int));
     };
 
     const int& GetNumClasses(void) const { return m_nClasses; };

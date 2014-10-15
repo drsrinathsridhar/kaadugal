@@ -21,7 +21,7 @@ namespace Kaadugal
 	int m_NumNodes;
 
     public:
-	DecisionTree(int MaxDecisionLevels)
+	DecisionTree(int MaxDecisionLevels = 0)
 	    : m_MaxDecisionLevels(MaxDecisionLevels)
 	{
 	    if(MaxDecisionLevels < 0)
@@ -38,6 +38,24 @@ namespace Kaadugal
 	    // NOTE: Will crash if this exceeds available system memory
 	    m_Nodes.resize( (1 << (MaxDecisionLevels + 1)) - 1 ); // 2^(l+1) - 1
 	    m_NumNodes = m_Nodes.size();
+	};
+
+	void Serialize(std::ostream& OutputStream)
+	{
+	    OutputStream.write((const char *)(&m_MaxDecisionLevels), sizeof(int));
+	    OutputStream.write((const char *)(&m_NumNodes), sizeof(int));
+	    for(int i = 0; i < m_NumNodes; ++i)
+		m_Nodes[i].Serialize(OutputStream);
+	};
+
+	void Deserialize(std::istream& InputStream)
+	{
+	    InputStream.read((char *)(&m_MaxDecisionLevels), sizeof(int));
+	    InputStream.read((char *)(&m_NumNodes), sizeof(int));
+	    // NOTE: Will crash if this exceeds available system memory
+	    m_Nodes.resize(m_NumNodes);
+	    for(int i = 0; i < m_NumNodes; ++i)
+		m_Nodes[i].Deserialize(InputStream);
 	};
 
 	const std::vector<DecisionNode<T, S, R>>& GetAllNodes(void) { return m_Nodes; };
@@ -89,16 +107,6 @@ namespace Kaadugal
 		return false;
 
 	    return true;
-	};
-
-	// Stream write methods
-	virtual void Serialize(std::ostream& Out) const
-	{
-	    // TODO:
-	};
-	virtual void Deserialize(std::istream& In)
-	{
-	    // TODO:
 	};
 
 	// Render methods for visualizing node

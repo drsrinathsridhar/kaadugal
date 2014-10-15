@@ -2,6 +2,8 @@
 #define _ABSTRACTSTATISTICS_HPP_
 
 #include <memory>
+#include <ostream>
+#include <istream>
 
 #include "DataSetIndex.hpp"
 
@@ -14,10 +16,8 @@ namespace Kaadugal
 	{
 	    m_isAggregated = false;
 	};
-	// AbstractStatistics(std::shared_ptr<DataSetIndex> DataSetIdx)
-	// {
-	//     Aggregate(DataSetIdx);
-	// };
+	virtual void Serialize(std::ostream& OutputStream) = 0;
+	virtual void Deserialize(std::istream& InputStream) = 0;
 
 	virtual void Aggregate(std::shared_ptr<DataSetIndex> DataSetIdx) = 0;
 	virtual void Merge(std::shared_ptr<AbstractStatistics> OtherStats) = 0; // Merging two stats together

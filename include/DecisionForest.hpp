@@ -2,6 +2,8 @@
 #define _DECISIONFOREST_HPP_
 
 #include <memory>
+#include <ostream>
+#include <istream>
 
 #include "DecisionTree.hpp"
 #include "Abstract/AbstractDataSet.hpp"
@@ -33,6 +35,25 @@ namespace Kaadugal
 	    // TODO: Handle arbitrary leaf data
 	    for(int i = 0; i < m_nTrees; ++i)
 		ForestLeafStats->Merge(m_Trees[i]->Test(DataPointPtr));
+	};
+
+	void Serialize(std::ostream& OutputStream)
+	{
+	    OutputStream.write((const char *)(&m_nTrees), sizeof(int));
+	    for(int i = 0; i < m_nTrees; ++i)
+		m_Trees[i]->Serialize(OutputStream);
+	};
+	void Deserialize(std::istream& InputStream)
+	{
+	    int nTrees = 0;
+	    InputStream.read((char *)(&nTrees), sizeof(int));
+	    std::cout << "Num Trees: " << nTrees << std::endl;
+	    for(int i = 0; i < m_nTrees; ++i)
+	    {
+		auto Tree = std::shared_ptr<DecisionTree<T, S, R>>(new DecisionTree<T, S, R>(0)); // Create empty tree
+		Tree->Deserialize(InputStream);
+		AddTree(Tree);
+	    }
 	};
     };
 } // namespace Kaadugal

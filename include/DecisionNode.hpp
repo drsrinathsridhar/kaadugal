@@ -23,21 +23,21 @@ namespace Kaadugal
     class DecisionNode
     {
     private:
+	Kaadugal::NodeType m_Type;
+
 	// Even leaf nodes store a threshold if needed. Might be useful for growing trees after training
 	VPFloat m_Threshold; // The decision threshold
 	T m_FeatureResponse; // The feature response function
 	S m_Statistics; // Node statistics
 	R m_Data; // Arbitrary leaf data
 
-	Kaadugal::NodeType m_Type;
-
     public:
 	DecisionNode(void) // With no arguments, we construct an invalid node
-	    : m_Threshold(std::numeric_limits<VPFloat>::quiet_NaN())
+	    : m_Type(Kaadugal::Invalid)
+	    , m_Threshold(std::numeric_limits<VPFloat>::quiet_NaN())
 	    , m_FeatureResponse(T())
 	    , m_Statistics(S())
 	    , m_Data(R())
-	    , m_Type(Kaadugal::Invalid)
 	{
 	    
 	};
@@ -49,6 +49,24 @@ namespace Kaadugal
 	    m_Statistics = RHS.m_Statistics;
 	    m_Data = RHS.m_Data;
 	    m_Type = RHS.m_Type;
+	};
+
+	void Serialize(std::ostream& OutputStream)
+	{
+	    OutputStream.write((const char *)(&m_Type), sizeof(Kaadugal::NodeType));
+	    OutputStream.write((const char *)(&m_Threshold), sizeof(VPFloat));
+	    m_FeatureResponse.Serialize(OutputStream);
+	    m_Statistics.Serialize(OutputStream);
+	    m_Data.Serialize(OutputStream);
+	};
+
+	void Deserialize(std::istream& InputStream)
+	{
+	    InputStream.read((char *)(&m_Type), sizeof(Kaadugal::NodeType));
+	    InputStream.read((char *)(&m_Threshold), sizeof(VPFloat));
+	    m_FeatureResponse.Deserialize(InputStream);
+	    m_Statistics.Deserialize(InputStream);
+	    m_Data.Deserialize(InputStream);
 	};
 
 	void MakeSplitNode(S Statistics, T FeatureResponse, VPFloat Threshold)
@@ -74,16 +92,6 @@ namespace Kaadugal
 	T& GetFeatureResponse(void) { return m_FeatureResponse; };
 	const VPFloat& GetThreshold(void) { return m_Threshold; };
 	const Kaadugal::NodeType& GetType(void) { return m_Type; };
-
-	// Stream write methods
-	virtual void Serialize(std::ostream& Out) const
-	{
-	    // TODO:
-	};
-	virtual void Deserialize(std::istream& In)
-	{
-	    // TODO:
-	};
 
 	// Render methods for visualizing node
 	virtual void Render(void)
