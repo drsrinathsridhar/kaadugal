@@ -48,5 +48,4 @@ Then test the forest on input data using
 # Contact
 
 Srinath Sridhar (srinaths@umich.edu)
-
 Max Planck Institute for Informatics

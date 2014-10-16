@@ -27,7 +27,7 @@ public:
 
     int m_ClassLabel; // Always integer starting with 0. -1 means no class label
 
-    int GetLabel(void) { return m_ClassLabel; };
+    const int& GetLabel(void) { return m_ClassLabel; };
 
     friend std::ostream& operator<<(std::ostream &s, const Point2D &p)
     {
@@ -51,6 +51,7 @@ public:
 
 class PointSet2D : public Kaadugal::AbstractDataSet
 {
+private:
     int m_NumClassLabels;
 
 public:
@@ -115,11 +116,8 @@ public:
 		    );
 	    }
 	    else
-	    {
-		std::cout << "[ ERROR ]: Invalid data file. Aborting." << std::endl;
-		m_DataPoints.clear();
-		break;
-	    }
+		throw std::runtime_error("Invalid data file. Exiting.");
+
 	    // std::cout << Row;
 	    m_DataPoints.push_back(std::make_shared<Point2D>(Row));
 	}
