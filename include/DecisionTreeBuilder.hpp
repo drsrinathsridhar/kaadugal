@@ -256,13 +256,24 @@ namespace Kaadugal
 	    for(int i = 0; i < m_Tree->GetMaxDecisionLevels(); ++i)
 	    {
 		UpdateFrontierIdx();
-		BuildTreeFrontier();
+		BuildTreeFrontier(DataSetIdx);
 	    }
 	    return true;
 	};
 
-	void BuildTreeFrontier(void)
+	void BuildTreeFrontier(std::shared_ptr<DataSetIndex> DataSetIdx)
 	{
+	    // for(int i = 0; i < m_Parameters.m_NumCandidateFeatures; ++i)
+	    // {
+	    // }
+
+	    // std::vector<VPFloat> Responses;
+	    // int DataSetSize = PartitionedDataSetIdx->Size();
+	    // for(int k = 0; k < DataSetSize; ++k)
+	    // 	Responses.push_back(FeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k))); // TODO: Can be parallelized/made more efficient?
+
+	    // const std::vector<VPFloat>& Thresholds = SelectThresholds(PartitionedDataSetIdx, Responses);
+	    // int NumThresholds = Thresholds.size();
 
 	};
 
