@@ -23,6 +23,9 @@ namespace Kaadugal
 	const ForestBuilderParameters& m_Parameters; // Parameters also should never be modified
 	bool m_isTreeTrained;
 
+	// Members for bread-first building
+	std::vector<int> m_FrontierIdx; // Is not strictly the frontier but a subset with all non-built nodes
+
     public:
 	DecisionTreeBuilder(const ForestBuilderParameters& Parameters)
 	    : m_Parameters(Parameters)
@@ -98,7 +101,7 @@ namespace Kaadugal
 	    if(m_Parameters.m_TrainMethod == TrainMethod::DFS)
 	    	Success = BuildTreeDepthFirst(m_PartitionedDataSetIdx, 0, 0);
 	    if(m_Parameters.m_TrainMethod == TrainMethod::BFS)
-	    	Success = BuildTreeBreadthFirst();
+	    	Success = BuildTreeBreadthFirst(m_PartitionedDataSetIdx);
 	    if(m_Parameters.m_TrainMethod == TrainMethod::Hybrid)
 	    	Success = BuildTreeHybrid();
 
@@ -218,12 +221,12 @@ namespace Kaadugal
 	    if(OptLeftPartitionIdx->Size() > 0)
 		BuildTreeDepthFirst(OptLeftPartitionIdx, 2*NodeIndex+1, CurrentNodeDepth+1);
 	    else
-		std::cout << "[ WARN ]: No data so not recusring" << std::endl;
+		std::cout << "[ WARN ]: No data so not recursing." << std::endl;
 
 	    if(OptRightPartitionIdx->Size() > 0)
 		BuildTreeDepthFirst(OptRightPartitionIdx, 2*NodeIndex+2, CurrentNodeDepth+1);
 	    else
-		std::cout << "[ WARN ]: No data so not recusring" << std::endl;
+		std::cout << "[ WARN ]: No data so not recursing." << std::endl;
 	    	    
 	    return true;
 	};
@@ -248,11 +251,53 @@ namespace Kaadugal
 	    return InformationGain;
 	};
 
-	bool BuildTreeBreadthFirst(void)
+	bool BuildTreeBreadthFirst(std::shared_ptr<DataSetIndex> DataSetIdx)
 	{
-	    // TODO:
-	    std::cout << "[ INFO ]: BuildTreeBreadthFirst() is not yet implemented." << std::endl;
-	    return false;
+	    for(int i = 0; i < m_Tree->GetMaxDecisionLevels(); ++i)
+	    {
+		UpdateFrontierIdx();
+		BuildTreeFrontier();
+	    }
+	    return true;
+	};
+
+	void BuildTreeFrontier(void)
+	{
+
+	};
+
+	void UpdateFrontierIdx(void)
+	{
+	    if(m_FrontierIdx.size() == 0) // First iteration, the frontier has nothing so we add the root to the frontier
+	    {
+		m_FrontierIdx.push_back(0);
+		return;
+	    }
+
+	    std::vector<int> LocalFrontIdx = m_FrontierIdx;
+	    m_FrontierIdx.clear();
+	    for(auto itr = LocalFrontIdx.begin(); itr != LocalFrontIdx.end(); ++itr)
+	    {
+		int NodeIndex = (*itr);
+		if(m_Tree->GetNode(NodeIndex).GetType() == Kaadugal::NodeType::Invalid)
+		{
+		    std::cout << "[ WARN ]: Something is not right. Frontier has an invalid node. Frontier not changed." << std::endl;
+		    m_FrontierIdx = LocalFrontIdx;
+		    return;
+		}
+		
+		if(m_Tree->GetNode(NodeIndex).GetType() == Kaadugal::NodeType::LeafNode)
+		{
+		    // Do nothing, since this is a frontier node that would have been built already, we don't need this in the frontier
+		}
+
+		if(m_Tree->GetNode(NodeIndex).GetType() == Kaadugal::NodeType::SplitNode)
+		{
+		    // Add it's two children to the frontier
+		    m_FrontierIdx.push_back(2*NodeIndex + 1); // Left child
+		    m_FrontierIdx.push_back(2*NodeIndex + 2); // Right child
+		}
+	    }
 	};
 
 	bool BuildTreeHybrid(void)
