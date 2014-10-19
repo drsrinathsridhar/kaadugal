@@ -19,12 +19,13 @@ namespace Kaadugal
     {
     private:
 	std::shared_ptr<DecisionTree<T, S, R>> m_Tree;
-	std::shared_ptr<DataSetIndex> m_PartitionedDataSetIdx;
+	// std::shared_ptr<DataSetIndex> m_PartitionedDataSetIdx;
 	const ForestBuilderParameters& m_Parameters; // Parameters also should never be modified
 	bool m_isTreeTrained;
 
 	// Members for bread-first building
 	std::vector<int> m_FrontierIdx; // Is not strictly the frontier but a subset with all non-built nodes
+	std::vector<int> m_DataDeepestNodeIndex; // Stores the node index of the (currently) lowest node that a data point reaches. Same size as the number of data points
 
     public:
 	DecisionTreeBuilder(const ForestBuilderParameters& Parameters)
@@ -96,12 +97,11 @@ namespace Kaadugal
 	bool Build(std::shared_ptr<DataSetIndex> PartitionedDataSetIdx)
 	{
 	    m_Tree = std::shared_ptr<DecisionTree<T, S, R>>(new DecisionTree<T, S, R>(m_Parameters.m_MaxLevels));
-	    m_PartitionedDataSetIdx = PartitionedDataSetIdx;
 	    bool Success = true;
 	    if(m_Parameters.m_TrainMethod == TrainMethod::DFS)
-	    	Success = BuildTreeDepthFirst(m_PartitionedDataSetIdx, 0, 0);
+	    	Success = BuildTreeDepthFirst(PartitionedDataSetIdx, 0, 0);
 	    if(m_Parameters.m_TrainMethod == TrainMethod::BFS)
-	    	Success = BuildTreeBreadthFirst(m_PartitionedDataSetIdx);
+	    	Success = BuildTreeBreadthFirst(PartitionedDataSetIdx);
 	    if(m_Parameters.m_TrainMethod == TrainMethod::Hybrid)
 	    	Success = BuildTreeHybrid();
 
@@ -253,28 +253,51 @@ namespace Kaadugal
 
 	bool BuildTreeBreadthFirst(std::shared_ptr<DataSetIndex> DataSetIdx)
 	{
+	    // All the incoming data reaches the root for sure
+	    m_DataDeepestNodeIndex.resize(DataSetIdx->Size(), 0); // Later this is updated inside BuildTreeFrontier()
+	    UpdateFrontierIdx(); // Update before starting. Later this is called inside BuildTreeFrontier()
+
 	    for(int i = 0; i < m_Tree->GetMaxDecisionLevels(); ++i)
-	    {
-		UpdateFrontierIdx();
 		BuildTreeFrontier(DataSetIdx);
-	    }
+	    
 	    return true;
 	};
 
 	void BuildTreeFrontier(std::shared_ptr<DataSetIndex> DataSetIdx)
 	{
-	    // for(int i = 0; i < m_Parameters.m_NumCandidateFeatures; ++i)
-	    // {
-	    // }
+	    // TODO: Convert int to vector::type to avoid int overflow problems
+	    // Using large integers
+	    int64_t NumCandidateThresholds = m_Parameters.m_NumCandidateThresholds>DataSetIdx->Size()?m_Parameters.m_NumCandidateThresholds:DataSetIdx->Size();
+	    int64_t NumSplitCandidates = m_Parameters.m_NumCandidateFeatures * NumCandidateThresholds;
+	    int64_t NumFrontierNodes = m_FrontierIdx.size();
+	    std::vector<S> AllStatistics(NumSplitCandidates*NumFrontierNodes);
+	    // NOTE: This is different from Criminisi et al. We create a 3D matrix here.
+	    // Also we use a single vector to denote the 3D matrix so that they are all contiguous in memory (heap as all vectors are)
+	    // Dimensions are Rows (i, FeatureResponses) x Cols (j, Thresholds) x Depth (k, Frontier nodes)
+	    std::vector<T> FeatureResponses(NumSplitCandidates*NumFrontierNodes);
 
-	    // std::vector<VPFloat> Responses;
-	    // int DataSetSize = PartitionedDataSetIdx->Size();
-	    // for(int k = 0; k < DataSetSize; ++k)
-	    // 	Responses.push_back(FeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k))); // TODO: Can be parallelized/made more efficient?
+	    // Doing the two-pass strategy described in Efficient Implementation of Decision Forests by Criminisi et al.
+	    // The first pass gives us proper candidate thresholds which are used in the second pass
+	    int DataSetSize = DataSetIdx->Size();
+	    for(int DatItr = 0; DatItr < DataSetSize; ++DatItr)
+	    {
+		// // First find which node this data point reaches
+		// int k = m_DataDeepestNodeIndex[DatItr];
+		// if(std::find(m_FrontierIdx.begin(), m_FrontierIdx.end(), k) == m_FrontierIdx.end())
+		//     continue; // Since the above k might not be in the "frontier", continue to the next data point
 
-	    // const std::vector<VPFloat>& Thresholds = SelectThresholds(PartitionedDataSetIdx, Responses);
-	    // int NumThresholds = Thresholds.size();
+		// for(int FeatCtr = 0; FeatCtr < m_Parameters.m_NumCandidateFeatures; ++FeatCtr)
+		// {
+		//     T FeatureResponse; // This creates an empty feature response with random response
+		//     std::vector<VPFloat> Responses;
+		//     int DataSetSize = PartitionedDataSetIdx->Size();
+		//     for(int k = 0; k < DataSetSize; ++k)
+		// 	Responses.push_back(FeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k))); // TODO: Can be parallelized/made more efficient?
 
+		//     const std::vector<VPFloat>& Thresholds = SelectThresholds(PartitionedDataSetIdx, Responses);
+		//     int NumThresholds = Thresholds.size();
+		// }
+	    }
 	};
 
 	void UpdateFrontierIdx(void)
