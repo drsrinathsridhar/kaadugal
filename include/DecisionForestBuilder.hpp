@@ -78,7 +78,7 @@ namespace Kaadugal
 	    m_DataSet = DataSet;
 	    if(uint64_t(m_Parameters.m_NumTrees) > m_DataSet->Size())
 	    {
-		std::cout << "[ WARN ]: The number of trees is greater than the number of training samples. Cannot train forest." << std::endl;
+		std::cout << "[ WARN ]: The number of trees (" << m_Parameters.m_NumTrees << ") is greater than the number of training samples (" << m_DataSet->Size() << "). Cannot train forest." << std::endl;
 		return false;
 	    }
 
