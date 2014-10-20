@@ -25,7 +25,7 @@ void PrintUsage(char * argv[])
 
 bool ParseArguments(int argc, char * argv[])
 {
-    if(argc < 4 && argc > 5)
+    if(argc < 4 || argc > 5)
     {
 	PrintUsage(argv);
 	return false;

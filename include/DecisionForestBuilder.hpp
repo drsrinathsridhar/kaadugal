@@ -76,7 +76,7 @@ namespace Kaadugal
 	bool Build(std::shared_ptr<AbstractDataSet> DataSet)
 	{
 	    m_DataSet = DataSet;
-	    if(m_Parameters.m_NumTrees > m_DataSet->Size())
+	    if(uint64_t(m_Parameters.m_NumTrees) > m_DataSet->Size())
 	    {
 		std::cout << "[ WARN ]: The number of trees is greater than the number of training samples. Cannot train forest." << std::endl;
 		return false;

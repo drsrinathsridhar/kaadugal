@@ -19,14 +19,15 @@ namespace Kaadugal
     {
     protected:
 	std::vector<std::shared_ptr<AbstractDataPoint>> m_DataPoints;
+	uint64_t m_NumDataPoints; // To manage large datasets we use uint64_t
 
     public:
 	virtual void Serialize(std::ostream& OutputStream) = 0;
 	virtual void Deserialize(std::istream& InputStream) = 0;
-	virtual int Size(void) { return m_DataPoints.size(); };
-	virtual std::shared_ptr<AbstractDataPoint> Get(int i)
+	virtual uint64_t Size(void) { return m_NumDataPoints; };
+	virtual std::shared_ptr<AbstractDataPoint> Get(uint64_t i)
 	{
-	    if(i < 0)
+	    if(i >= m_NumDataPoints)
 		return nullptr;
 
 	    return m_DataPoints[i];
