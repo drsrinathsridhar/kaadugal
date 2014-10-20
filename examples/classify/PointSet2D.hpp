@@ -122,7 +122,8 @@ public:
 	    m_DataPoints.push_back(std::make_shared<Point2D>(Row));
 	}
 	m_NumClassLabels = ClassSet.size();
-	std::cout << "[ INFO ]: Finished reading input data. Total number of classes: " << m_NumClassLabels << std::endl;
+	m_NumDataPoints = m_DataPoints.size();
+	std::cout << "[ INFO ]: Finished reading input data (Total: " << m_NumDataPoints << "). Total number of classes: " << m_NumClassLabels << std::endl;
     };
 };
 

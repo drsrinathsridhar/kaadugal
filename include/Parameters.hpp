@@ -24,13 +24,15 @@ namespace Kaadugal
 	int m_NumCandidateThresholds;
 	TrainMethod m_TrainMethod;
 	bool m_isValid;
+	VPFloat m_MinGain; // Minimum gain to tolerate
 	
-	ForestBuilderParameters(int NumTrees, int MaxLevels, int NumCandidateFeatures, int NumCandidateThresholds, TrainMethod Type = TrainMethod::DFS)
+	ForestBuilderParameters(int NumTrees, int MaxLevels, int NumCandidateFeatures, int NumCandidateThresholds, VPFloat MinGain, TrainMethod Type = TrainMethod::DFS)
 	    : m_NumTrees(NumTrees)
 	    , m_MaxLevels(MaxLevels)
 	    , m_NumCandidateFeatures(NumCandidateFeatures)
 	    , m_NumCandidateThresholds(NumCandidateThresholds)
 	    , m_TrainMethod(Type)
+	    , m_MinGain(MinGain)
 	{
 
 	};
@@ -48,6 +50,7 @@ namespace Kaadugal
 	    m_NumCandidateThresholds = RHS.m_NumCandidateThresholds;
 	    m_TrainMethod = RHS.m_TrainMethod;
 	    m_isValid = RHS.m_isValid;
+	    m_MinGain = RHS.m_MinGain;
 
 	    return *this;
         };
@@ -65,6 +68,7 @@ namespace Kaadugal
 		// Read parameters from file
 		m_isValid = true;
 		std::string Line;
+		int ConfigCtr = 0;
 		while(std::getline(ParamFile, Line))
 		{
 		    // Skip empty lines or lines beginning with #
@@ -91,6 +95,7 @@ namespace Kaadugal
 			    if(Key == "NumTrees")
 			    {
 				m_NumTrees = std::atoi(Value.c_str());
+				ConfigCtr++;
 				// std::cout << m_NumTrees << std::endl;
 			    }			
 			    if(Key == "TrainMethod")
@@ -101,17 +106,41 @@ namespace Kaadugal
 				    m_TrainMethod = TrainMethod::DFS;
 				if(Value == "Hybrid")
 				    m_TrainMethod = TrainMethod::Hybrid;
+
+				ConfigCtr++;
 			    }
 			    if(Key == "MaxTreeLevels")
+			    {
 				m_MaxLevels = std::atoi(Value.c_str());
+				ConfigCtr++;
+			    }
 			    if(Key == "NumCandidateFeats")
+			    {
 				m_NumCandidateFeatures = std::atoi(Value.c_str());
+				ConfigCtr++;
+			    }
 			    if(Key == "NumCandidateThresh")
+			    {
 				m_NumCandidateThresholds = std::atoi(Value.c_str());
+				ConfigCtr++;
+			    }
+			    if(Key == "MinGain")
+			    {
+				m_MinGain = VPFloat(std::atof(Value.c_str()));
+				ConfigCtr++;
+			    }
+
 			    isKey = false;
 			    continue;
 			}
 		    }
+		}
+
+		if(ConfigCtr != 6)
+		{
+		    std::cout << "[ WARN ]: Some parameters are missing (read only " << ConfigCtr << "). Please check input." << std::endl;
+		    m_isValid = false;
+		    return;
 		}
 
 		// Print info for debug purposes

@@ -4,3 +4,4 @@ TrainMethod: DFS
 MaxTreeLevels: 5
 NumCandidateFeats: 10
 NumCandidateThresh: 10
+MinGain: 0.01

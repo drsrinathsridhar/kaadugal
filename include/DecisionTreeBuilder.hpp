@@ -111,6 +111,7 @@ namespace Kaadugal
 
 	bool BuildTreeDepthFirst(std::shared_ptr<DataSetIndex> PartitionedDataSetIdx, int NodeIndex, int CurrentNodeDepth)
 	{
+	    std::cout << "[ INFO ]: At depth: " << CurrentNodeDepth << std::endl;
 	    S ParentNodeStats(PartitionedDataSetIdx);
 	    // std::cout << ParentNodeStats.GetNumDataPoints() << std::endl;
 	    // std::cout << ParentNodeStats.GetProbability(0) << std::endl;
@@ -204,7 +205,7 @@ namespace Kaadugal
 
 	    // Check for some recursion termination conditions
 	    // No gain or very small gain
-	    if(OptObjVal == 0.0 || OptObjVal < 0.01) // TODO: This number maybe different for different problems. So this needs to go somewhere else.
+	    if(OptObjVal == 0.0 || OptObjVal < m_Parameters.m_MinGain)
 	    {
 		std::cout << "[ INFO ]: No gain or very small gain for all splitting candidates. Making leaf node..." << std::endl;
 	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
