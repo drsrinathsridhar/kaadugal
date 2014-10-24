@@ -14,7 +14,7 @@ namespace Kaadugal
     // T: AbstractFeatureResponse which is the feature response function or weak learner
     // S: AbstractStatistics which contains some statistics about node from training
     // R: AbstractLeafData, arbitrary data stored if this is a leaf node
-    template<class T, class S, class R>
+    template<class T, class S, class R = AbstractLeafData>
     class DecisionTreeBuilder
     {
     private:
@@ -26,6 +26,9 @@ namespace Kaadugal
 	// Members for bread-first building
 	std::vector<int> m_FrontierIdx; // Is not strictly the frontier but a subset with all non-built nodes
 	std::vector<int> m_DataDeepestNodeIndex; // Stores the node index of the (currently) lowest node that a data point reaches. Same size as the number of data points
+
+	// When training tree separately, we need a pointer to the data
+	std::shared_ptr<AbstractDataSet> m_DataSet;
 
     public:
 	DecisionTreeBuilder(const ForestBuilderParameters& Parameters)
@@ -106,6 +109,29 @@ namespace Kaadugal
 	    	Success = BuildTreeHybrid();
 
 	    m_isTreeTrained = Success;
+	    return m_isTreeTrained;
+	};
+
+	// Overloaded version if we would like to build only one tree at a time
+	bool Build(std::shared_ptr<AbstractDataSet> DataSet)
+	{
+	    m_DataSet = DataSet;
+	    int SetSize = m_DataSet->Size();
+	    if(SetSize <= 1)
+	    {
+		std::cout << "[ WARN ]: The number of training samples (" << SetSize << ") is too low. Cannot train this tree." << std::endl;
+		return false;
+	    }
+
+	    // Randomize the data
+	    // Create an indices set with all indices
+	    std::vector<int> Indices;
+	    for(int i = 0; i < SetSize; ++i)
+		Indices.push_back(i);
+	    std::shuffle(Indices.begin(), Indices.end(), Randomizer::Get().GetRNG());
+	    
+	    // Contains index to all points in the data set BUT they are randomized
+	    m_isTreeTrained = Build(std::shared_ptr<DataSetIndex>(new DataSetIndex(m_DataSet, Indices)));
 	    return m_isTreeTrained;
 	};
 

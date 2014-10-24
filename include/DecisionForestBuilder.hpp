@@ -86,7 +86,8 @@ namespace Kaadugal
 
 	    RandomPartition(); // Randomly partition data set into NumTrees subsets
 
-	    for(int i = 0; i < int(m_TreeBuilders.size()); ++i)
+	    int nTreeBuilders = m_TreeBuilders.size();
+	    for(int i = 0; i < nTreeBuilders; ++i)
 	    {
 		std::cout << "[ INFO ]: Training tree number " << i << "..." << std::endl;
 		bool TreeSuccess = m_TreeBuilders[i].Build(m_DataSubsetsIdx[i]);
