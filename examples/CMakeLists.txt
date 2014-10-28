@@ -31,3 +31,12 @@ INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/../include)
 SET(CPP_FILES structpredict/structpredict.cpp)
 ADD_EXECUTABLE(${PROJECT2} ${CPP_FILES})
 TARGET_LINK_LIBRARIES(${PROJECT2})
+
+
+# Project mergetrees for merging trees without knowing anything else
+SET(PROJECT3 mergetrees)
+PROJECT(${PROJECT3})
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/../include)
+SET(CPP_FILES mergetrees/mergetrees.cpp)
+ADD_EXECUTABLE(${PROJECT3} ${CPP_FILES})
+TARGET_LINK_LIBRARIES(${PROJECT3})

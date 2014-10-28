@@ -72,13 +72,6 @@ namespace Kaadugal
 
 	    S TreeLeafStats;
 	    TestRecursive(DataPointPtr, 0, TreeLeafStats);
-	    // std::cout << "0: " << TreeLeafStats.GetProbability(0) << std::endl;
-	    // std::cout << "1: " << TreeLeafStats.GetProbability(1) << std::endl;
-	    // std::cout << "2: " << TreeLeafStats.GetProbability(2) << std::endl;
-	    // std::cout << "3: " << TreeLeafStats.GetProbability(3) << std::endl;
-	    
-	    // std::cout << "Num classes: " << TreeLeafStats.GetNumClasses() << std::endl;
-	    // std::cout << "Winner: " << TreeLeafStats.FindWinnerLabelIndex() << std::endl;
 	    
 	    return std::make_shared<S>(TreeLeafStats);
 	};

@@ -62,26 +62,52 @@ int Train(void)
     std::shared_ptr<Kaadugal::AbstractDataSet> Point2DDataPtr = std::make_shared<PointSet2D>(g_Point2DData);
 
     // Build forest from training data
-    Kaadugal::DecisionForestBuilder<AAFeatureResponse2D, HistogramStats> ForestBuilder(ForestParams);
-    if(ForestBuilder.Build(Point2DDataPtr) == true)
+    if(ForestParams.m_NumTrees == 1) // We need to build only one tree
     {
-	std::cout << "Random Forest successfully trained." << std::endl;
-
-	std::cout << "Writing forest to file..." << std::endl;
-	std::filebuf FileBuf;
-	FileBuf.open(g_OutputForestFName, std::ios::out | std::ios::trunc | std::ios::binary);
-	if(FileBuf.is_open())
+	Kaadugal::DecisionTreeBuilder<AAFeatureResponse2D, HistogramStats> TreeBuilder(ForestParams);
+	if(TreeBuilder.Build(Point2DDataPtr) == true)
 	{
-	    std::ostream OutForest(&FileBuf);
-	    ForestBuilder.GetForest().Serialize(OutForest);
-	    FileBuf.close();
-	    std::cout << "Done." << std::endl;
+	    std::cout << "One tree of the random forest successfully trained." << std::endl;
+
+	    std::cout << "Writing tree to file..." << std::endl;
+	    std::filebuf FileBuf;
+	    FileBuf.open(g_OutputForestFName + ".tree", std::ios::out | std::ios::trunc | std::ios::binary);
+	    if(FileBuf.is_open())
+	    {
+		std::ostream OutTree(&FileBuf);
+		TreeBuilder.GetTree()->Serialize(OutTree);
+		FileBuf.close();
+		std::cout << "Done. You can merge the trees using the mergetrees program." << std::endl;
+	    }
+	    else
+		std::cout << "[ WARN ]: Unable to open file to save." << std::endl;
 	}
 	else
-	    std::cout << "[ WARN ]: Unable to open file to save." << std::endl;
+	    std::cout << "[ ERROR ]: Unable to train tree." << std::endl;
     }
     else
-	std::cout << "[ ERROR ]: Unable to train forest." << std::endl;
+    {
+	Kaadugal::DecisionForestBuilder<AAFeatureResponse2D, HistogramStats> ForestBuilder(ForestParams);
+	if(ForestBuilder.Build(Point2DDataPtr) == true)
+	{
+	    std::cout << "Random Forest successfully trained." << std::endl;
+
+	    std::cout << "Writing forest to file..." << std::endl;
+	    std::filebuf FileBuf;
+	    FileBuf.open(g_OutputForestFName, std::ios::out | std::ios::trunc | std::ios::binary);
+	    if(FileBuf.is_open())
+	    {
+		std::ostream OutForest(&FileBuf);
+		ForestBuilder.GetForest().Serialize(OutForest);
+		FileBuf.close();
+		std::cout << "Done." << std::endl;
+	    }
+	    else
+		std::cout << "[ WARN ]: Unable to open file to save." << std::endl;
+	}
+	else
+	    std::cout << "[ ERROR ]: Unable to train forest." << std::endl;
+    }
 
     return 0;
 }
