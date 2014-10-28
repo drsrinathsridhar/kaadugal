@@ -136,7 +136,7 @@ namespace Kaadugal
 		    }
 		}
 
-		if(ConfigCtr != 6)
+		if(ConfigCtr < 6) // Greater than 6 is fine because we can have other parameters in the config for client code
 		{
 		    std::cout << "[ WARN ]: Some parameters are missing (read only " << ConfigCtr << "). Please check input." << std::endl;
 		    m_isValid = false;
