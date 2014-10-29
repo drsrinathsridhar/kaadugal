@@ -3,6 +3,14 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 # Project classify
 SET(PROJECT1 classify)
 PROJECT(${PROJECT1})
+# OpenMP
+FIND_PACKAGE(OpenMP)
+IF(OPENMP_FOUND)
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  MESSAGE(STATUS "Found OpenMP and finished setting up appropriate compiler flags for C and C++")
+ENDIF()
+
 IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") # GCC on Linux
   # We need C++11 support
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -O3") # Enable lots of warning flags and optimization

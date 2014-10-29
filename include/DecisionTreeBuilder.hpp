@@ -2,6 +2,8 @@
 #define _DECISIONTREEBUILDER_HPP_
 
 #include <memory>
+#include <map>
+#include <omp.h>
 
 #include "DecisionTree.hpp"
 #include "Abstract/AbstractDataSet.hpp"
@@ -160,7 +162,27 @@ namespace Kaadugal
 	    S OptLeftNodeStats;
 	    S OptRightNodeStats;
 
-	    // TODO: Candidate for parallelization
+	    // TODO: Testing parallelization
+	    struct InsetStruct
+	    {
+	    public:
+		InsetStruct(VPFloat Thresh, std::vector<VPFloat> Responses, T FeatureResponse)
+		    : s_Threshold(Thresh)
+		    , s_Responses(Responses)
+		    , s_FeatureResponse(FeatureResponse)
+		{
+
+		};
+		VPFloat s_Threshold;
+		std::vector<VPFloat> s_Responses;
+		T s_FeatureResponse;
+	    };
+	    std::vector<VPFloat> ObjValAccum;
+	    std::vector<InsetStruct> InsetStructAccum;
+	    omp_set_dynamic(0); // Explicitly disable dynamic teams
+	    omp_set_num_threads(8);
+
+// #pragma omp parallel for
 	    for(int i = 0; i < m_Parameters.m_NumCandidateFeatures; ++i)
 	    {
 		T FeatureResponse; // This creates an empty feature response with random response
@@ -194,18 +216,44 @@ namespace Kaadugal
 		    // Then compute some objective function value. Examples: information gain, Geni index
 		    VPFloat ObjVal = GetObjectiveValue(ParentNodeStats, LeftNodeStats, RightNodeStats);
 
-		    if(ObjVal >= OptObjVal)
-		    {
-			OptObjVal = ObjVal;
-			OptFeatureResponse = FeatureResponse;
-			OptThreshold = Thresholds[j];
-			OptLeftPartitionIdx = Subsets.first;
-			OptRightPartitionIdx = Subsets.second;
-			OptLeftNodeStats = LeftNodeStats; // TODO: Overload = operator
-			OptRightNodeStats = RightNodeStats;
-		    }
+		    InsetStructAccum.push_back(InsetStruct(Thresholds[j], Responses, FeatureResponse));
+		    ObjValAccum.push_back(ObjVal);
+
+		    // if(ObjVal >= OptObjVal)
+		    // {
+		    // 	OptObjVal = ObjVal;
+		    // 	OptFeatureResponse = FeatureResponse;
+		    // 	OptThreshold = Thresholds[j];
+		    // 	OptLeftPartitionIdx = Subsets.first;
+		    // 	OptRightPartitionIdx = Subsets.second;
+		    // 	OptLeftNodeStats = LeftNodeStats; // TODO: Overload = operator
+		    // 	OptRightNodeStats = RightNodeStats;
+		    // }
 		}
 	    }
+
+	    int AccumSize = ObjValAccum.size();
+	    int BestIdx = 0;
+	    for(int ii = 0; ii < AccumSize; ++ii)
+	    {
+		if(ObjValAccum[ii] >= OptObjVal)
+		{
+		    OptObjVal = ObjValAccum[ii];
+		    OptFeatureResponse = InsetStructAccum[ii].s_FeatureResponse;
+		    OptThreshold = InsetStructAccum[ii].s_Threshold;
+		    BestIdx = ii;
+		}
+	    }
+
+	    std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets = Partition(PartitionedDataSetIdx, InsetStructAccum[BestIdx].s_Responses, OptThreshold);
+	    S LeftNodeStats(Subsets.first);
+	    S RightNodeStats(Subsets.second);
+
+	    OptLeftPartitionIdx = Subsets.first;
+	    OptRightPartitionIdx = Subsets.second;
+	    OptLeftNodeStats = LeftNodeStats;
+	    OptRightNodeStats = RightNodeStats;
+	    
 
 	    // std::cout << "\n--------------------------------\n" << "Depth Level: " << CurrentNodeDepth << "\n--------------------------------\n";
 	    // {
