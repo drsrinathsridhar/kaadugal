@@ -9,7 +9,7 @@ namespace Kaadugal
 {
     // This is a singleton class but supports multiple *OpenMP* threads
     // Note, however, that no other threading library is supported
-// See also http://stackoverflow.com/questions/15918758/how-to-make-each-thread-use-its-own-rng-in-c11
+    // See also http://stackoverflow.com/questions/15918758/how-to-make-each-thread-use-its-own-rng-in-c11
     class Randomizer
     {
     private:

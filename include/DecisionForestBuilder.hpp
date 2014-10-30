@@ -5,8 +5,9 @@
 
 #include "DecisionForest.hpp"
 #include "DecisionTreeBuilder.hpp"
-#include "Randomizer.hpp"
 #include "DataSetIndex.hpp"
+#include "Randomizer.hpp"
+#include "Utilities.hpp"
 
 namespace Kaadugal
 {
@@ -24,6 +25,9 @@ namespace Kaadugal
 	std::vector<DecisionTreeBuilder<T,S,R>> m_TreeBuilders;
 	DecisionForest<T,S,R> m_Forest;
 	bool m_isForestTrained;
+
+	uint64_t m_TimeStartedBuild;
+	uint64_t m_TimeFinishedBuild;
 
 	void RandomPartition(void)
 	{
@@ -87,19 +91,19 @@ namespace Kaadugal
 	    RandomPartition(); // Randomly partition data set into NumTrees subsets
 
 	    int nTreeBuilders = m_TreeBuilders.size();
+	    m_TimeStartedBuild = GetCurrentEpochTime();
 	    for(int i = 0; i < nTreeBuilders; ++i)
 	    {
 		std::cout << "[ INFO ]: Training tree number " << i << "..." << std::endl;
 		bool TreeSuccess = m_TreeBuilders[i].Build(m_DataSubsetsIdx[i]);
 		Success &= TreeSuccess;
 		if(TreeSuccess)
-		{
 		    m_Forest.AddTree(m_TreeBuilders[i].GetTree());
-		    std::cout << " Done." << std::endl;
-		}
 		else
 		    std::cout << "[ ERROR ]: Problem training tree number " << i << "." << std::endl;
 	    }
+	    m_TimeFinishedBuild = GetCurrentEpochTime();
+	    std::cout << "[ INFO ]: Forest training took: " << (m_TimeFinishedBuild - m_TimeStartedBuild) * 1e-6 << " s." << std::endl;
 
 	    m_isForestTrained = Success;
 	    return m_isForestTrained;

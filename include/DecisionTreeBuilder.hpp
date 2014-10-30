@@ -4,12 +4,14 @@
 #include <memory>
 #include <map>
 #include <omp.h>
+#include <chrono> // This does not work with MSVC 2010 or GCC old versions
 
 #include "DecisionTree.hpp"
 #include "Abstract/AbstractDataSet.hpp"
 #include "Parameters.hpp"
 #include "DataSetIndex.hpp"
 #include "Randomizer.hpp"
+#include "Utilities.hpp"
 
 namespace Kaadugal
 {
@@ -32,10 +34,38 @@ namespace Kaadugal
 	// When training tree separately, we need a pointer to the data
 	std::shared_ptr<AbstractDataSet> m_DataSet;
 
+	// Useful for printing the depth that the tree has reached
+	int m_ReachedMaxDepth;
+	uint64_t m_TimeStartedBuild;
+	uint64_t m_TimeFinishedBuild;
+
+	// Structure needed for OpenMP accumulator variable
+	struct OptParamsStruct
+	{
+	public:
+	    OptParamsStruct(void)
+	    {
+		s_isValid = false;
+	    };
+
+	    OptParamsStruct(const VPFloat& Thresh, const T& FeatureResponse, const bool isValid)
+		: s_Threshold(Thresh)
+		, s_FeatureResponse(FeatureResponse)
+		, s_isValid(isValid)
+	    {
+
+	    };
+	    VPFloat s_Threshold;
+	    T s_FeatureResponse;
+	    bool s_isValid;
+	};
+
+
     public:
 	DecisionTreeBuilder(const ForestBuilderParameters& Parameters)
 	    : m_Parameters(Parameters)
 	    , m_isTreeTrained(false)
+	    , m_ReachedMaxDepth(0)
 	{
 
 	};
@@ -104,12 +134,19 @@ namespace Kaadugal
 	{
 	    m_Tree = std::shared_ptr<DecisionTree<T, S, R>>(new DecisionTree<T, S, R>(m_Parameters.m_MaxLevels));
 	    bool Success = true;
+	    m_TimeStartedBuild = GetCurrentEpochTime();
 	    if(m_Parameters.m_TrainMethod == TrainMethod::DFS)
+	    {
+		std::cout << "[ INFO ]: At depth: ";
 	    	Success = BuildTreeDepthFirst(PartitionedDataSetIdx, 0, 0);
+	    }
 	    if(m_Parameters.m_TrainMethod == TrainMethod::BFS)
 	    	Success = BuildTreeBreadthFirst(PartitionedDataSetIdx);
 	    if(m_Parameters.m_TrainMethod == TrainMethod::Hybrid)
 	    	Success = BuildTreeHybrid();
+
+	    m_TimeFinishedBuild = GetCurrentEpochTime();
+	    std::cout << ": Finished in " << (m_TimeFinishedBuild - m_TimeStartedBuild) * 1e-6 << " s." << std::endl;
 
 	    m_isTreeTrained = Success;
 	    return m_isTreeTrained;
@@ -140,16 +177,30 @@ namespace Kaadugal
 
 	bool BuildTreeDepthFirst(std::shared_ptr<DataSetIndex> PartitionedDataSetIdx, int NodeIndex, int CurrentNodeDepth)
 	{
-	    std::cout << "[ INFO ]: At depth: " << CurrentNodeDepth << std::endl;
+	    if(m_ReachedMaxDepth < CurrentNodeDepth)
+	    {
+		m_ReachedMaxDepth = CurrentNodeDepth;
+		std::cout << CurrentNodeDepth << " " << std::flush;
+	    }
 	    S ParentNodeStats(PartitionedDataSetIdx);
+	    int DataSetSize = PartitionedDataSetIdx->Size();
 	    // std::cout << ParentNodeStats.GetNumDataPoints() << std::endl;
 	    // std::cout << ParentNodeStats.GetProbability(0) << std::endl;
 	    // std::cout << ParentNodeStats.FindWinnerLabelIndex() << std::endl;
 	    // return true;
 
+	    // Check if incoming data is fewer than 3 data points. If so then just create a leaf node
+	    // It's 3 (instead of 2) because otherwise the SelectThresholds() could return 1 which is problematic
+	    if(DataSetSize < 3) // TODO: Make this an external parameter?
+	    {
+		// std::cout << "[ INFO ]: Fewer than 2 data points in reached this node. Making leaf node..." << std::endl;
+	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
+		return true;
+	    }
+
 	    if(CurrentNodeDepth >= m_Tree->GetMaxDecisionLevels()) // Both are zero-indexed
 	    {
-		std::cout << "[ INFO ]: Terminating splitting at maximum tree depth." << std::endl;
+		// std::cout << "[ INFO ]: Terminating splitting at maximum tree depth." << std::endl;
 	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 	    	return true;
 	    }
@@ -163,38 +214,18 @@ namespace Kaadugal
 	    S OptLeftNodeStats;
 	    S OptRightNodeStats;
 
-	    // TODO: Testing parallelization
-	    struct InsetStruct
-	    {
-	    public:
-		InsetStruct(void)
-		{
-
-		};
-
-		InsetStruct(VPFloat Thresh, std::vector<VPFloat> Responses, T FeatureResponse)
-		    : s_Threshold(Thresh)
-		    , s_Responses(Responses)
-		    , s_FeatureResponse(FeatureResponse)
-		{
-
-		};
-		VPFloat s_Threshold;
-		std::vector<VPFloat> s_Responses;
-		T s_FeatureResponse;
-	    };
 	    std::vector<VPFloat> ObjValAccum(m_Parameters.m_NumCandidateFeatures*m_Parameters.m_NumCandidateThresholds, 0.0);
-	    std::vector<InsetStruct> InsetStructAccum(m_Parameters.m_NumCandidateFeatures*m_Parameters.m_NumCandidateThresholds);
+	    std::vector<OptParamsStruct> OptParamsStructAccum(m_Parameters.m_NumCandidateFeatures*m_Parameters.m_NumCandidateThresholds);
 	    omp_set_dynamic(0); // Explicitly disable dynamic teams
 	    omp_set_num_threads(std::min(m_Parameters.m_NumThreads, omp_get_max_threads()));
-	    // std::cout << "Threads: " << std::min(m_Parameters.m_NumThreads, omp_get_max_threads()) << std::endl;
+	    // std::cout << "Set Threads: " << std::min(m_Parameters.m_NumThreads, omp_get_max_threads()) << std::endl;
 
 #pragma omp parallel for
 	    for(int i = 0; i < m_Parameters.m_NumCandidateFeatures; ++i)
 	    {
+		// std::cout << "Using Threads: " << omp_get_num_threads() << std::endl;
 		T FeatureResponse; // This creates an empty feature response with random response
 		std::vector<VPFloat> Responses;
-		int DataSetSize = PartitionedDataSetIdx->Size();
 		for(int k = 0; k < DataSetSize; ++k)
 		    Responses.push_back(FeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k))); // TODO: Can be parallelized/made more efficient?
 
@@ -223,10 +254,10 @@ namespace Kaadugal
 		    // Then compute some objective function value. Examples: information gain, Geni index
 		    VPFloat ObjVal = GetObjectiveValue(ParentNodeStats, LeftNodeStats, RightNodeStats);
 
-		    // InsetStructAccum.push_back(InsetStruct(Thresholds[j], Responses, FeatureResponse));
+		    // OptParamsStructAccum.push_back(OptParamsStruct(Thresholds[j], Responses, FeatureResponse));
 		    // ObjValAccum.push_back(ObjVal);
-		    InsetStruct StructObj(Thresholds[j], Responses, FeatureResponse);
-		    InsetStructAccum[i*m_Parameters.m_NumCandidateThresholds + j] = StructObj;
+		    OptParamsStruct StructObj(Thresholds[j], FeatureResponse, true);
+		    OptParamsStructAccum[i*m_Parameters.m_NumCandidateThresholds + j] = StructObj;
 		    ObjValAccum[i*m_Parameters.m_NumCandidateThresholds + j] = ObjVal;
 
 		    // if(ObjVal >= OptObjVal)
@@ -243,21 +274,24 @@ namespace Kaadugal
 	    }
 
 	    int AccumSize = ObjValAccum.size();
-	    int BestIdx = 0;
  	    for(int ii = 0; ii < AccumSize; ++ii)
 	    {
-		if(InsetStructAccum[ii].s_Responses.size() < 1)
+		if(OptParamsStructAccum[ii].s_isValid == false)
 		    continue;
+
 		if(ObjValAccum[ii] >= OptObjVal)
 		{
 		    OptObjVal = ObjValAccum[ii];
-		    OptFeatureResponse = InsetStructAccum[ii].s_FeatureResponse;
-		    OptThreshold = InsetStructAccum[ii].s_Threshold;
-		    BestIdx = ii;
+		    OptFeatureResponse = OptParamsStructAccum[ii].s_FeatureResponse;
+		    OptThreshold = OptParamsStructAccum[ii].s_Threshold;
 		}
 	    }
 
-	    std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets = Partition(PartitionedDataSetIdx, InsetStructAccum[BestIdx].s_Responses, OptThreshold);
+	    std::vector<VPFloat> DataResponses(DataSetSize);
+	    for(int k = 0; k < DataSetSize; ++k) // TODO: Should be parallelized since this is outside of the above parallel section
+		DataResponses[k] = OptFeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k));
+
+	    std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets = Partition(PartitionedDataSetIdx, DataResponses, OptThreshold);
 	    S LeftNodeStats(Subsets.first);
 	    S RightNodeStats(Subsets.second);
 
@@ -293,14 +327,14 @@ namespace Kaadugal
 	    // No gain or very small gain
 	    if(OptObjVal == 0.0 || OptObjVal < m_Parameters.m_MinGain)
 	    {
-		std::cout << "[ INFO ]: No gain or very small gain (" << OptObjVal << ") for all splitting candidates. Making leaf node..." << std::endl;
+		// std::cout << "[ INFO ]: No gain or very small gain (" << OptObjVal << ") for all splitting candidates. Making leaf node..." << std::endl;
 	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 		return true;
 	    }
 
 	    // Now free to make a split node
 	    m_Tree->GetNode(NodeIndex).MakeSplitNode(ParentNodeStats, OptFeatureResponse, OptThreshold);
-	    std::cout << "[ INFO ]: Creating split node..." << std::endl;
+	    // std::cout << "[ INFO ]: Creating split node..." << std::endl;
 
 	    // Now recurse :)
 	    // Since we store the decision tree as a full binary tree (in
@@ -434,3 +468,4 @@ namespace Kaadugal
 } // namespace Kaadugal
 
 #endif // _DECISIONTREEBUILDER_HPP_
+

@@ -7,7 +7,8 @@ of processors and a shared memory.
 
 Kaadugal is known to work on multiple platforms including Linux and Windows.
 It uses C++11 features and therefore requires a compiler that supports
-these features.
+these features. It also uses OpenMP, so please make sure it is available.
+Otherwise no speedup will be possible.
 
 Kaadugal is the English phoneticization of the word காடுகள் (forests)
 in the Tamil language.

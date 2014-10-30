@@ -156,9 +156,19 @@ namespace Kaadugal
 		}
 
 		// Print info for debug purposes
-		std::cout << "[ INFO ]: Creating forest with trees with a depth of upto " << m_MaxLevels
-			  << " levels, trained using method " << m_TrainMethod << ", and "
-			  << m_NumCandidateThresholds << " candidate thresholds." << std::endl;
+		std::cout << "[ INFO ]: Here are the training parameters: " << std::endl;
+		std::cout << "[ Number of Threads   ]: " << m_NumThreads << std::endl;
+		std::cout << "[ Number of Trees     ]: " << m_NumTrees << std::endl;
+		std::cout << "[ Max Levels Per Tree ]: " << m_MaxLevels << std::endl;
+		if(m_TrainMethod == TrainMethod::DFS)
+		    std::cout << "[ Training Method     ]: " << "Depth First" << std::endl;
+		if(m_TrainMethod == TrainMethod::BFS)
+		    std::cout << "[ Training Method     ]: " << "Breadth First" << std::endl;
+		if(m_TrainMethod == TrainMethod::Hybrid)
+		    std::cout << "[ Training Method     ]: " << "Hybrid depth/breadth First" << std::endl;
+		std::cout << "[ Num of Thresholds   ]: " << m_NumCandidateThresholds << std::endl;
+		std::cout << "[ Num of Features     ]: " << m_NumCandidateFeatures << std::endl;
+		std::cout << "[ Minimum Gain        ]: " << m_MinGain << std::endl;
 	    }
 	    else
 	    {

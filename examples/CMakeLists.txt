@@ -9,6 +9,8 @@ IF(OPENMP_FOUND)
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
   MESSAGE(STATUS "Found OpenMP and finished setting up appropriate compiler flags for C and C++")
+ELSE()
+  MESSAGE(WARNING "OpenMP NOT found. Parallelization features will not be available.")
 ENDIF()
 
 SET(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "possible configurations" FORCE)
