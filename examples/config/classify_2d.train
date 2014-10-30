@@ -1,7 +1,8 @@
 # Parameter configuration file for learning decision forests
 NumTrees: 10
 TrainMethod: DFS
+NumThreads: 16
 MaxTreeLevels: 5
-NumCandidateFeats: 10
-NumCandidateThresh: 10
+NumCandidateFeats: 2000
+NumCandidateThresh: 50
 MinGain: 0.01

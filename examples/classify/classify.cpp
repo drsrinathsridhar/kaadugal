@@ -151,6 +151,17 @@ int Test(void)
 
 int main(int argc, char * argv[])
 {
+    // std::vector<int> TestC;
+    // for(int i = 0; i < 100; ++i)
+    // 	TestC.push_back(i);
+    // std::shuffle(TestC.begin(), TestC.end(), Kaadugal::Randomizer::Get().GetRNG());
+
+    // for(int i = 0; i < 100; ++i)
+    // 	std::cout << TestC[i] << " ";
+    // std::cout << std::endl;
+
+    // return -1;
+
     if(ParseArguments(argc, argv) == false)
 	return -1;
 

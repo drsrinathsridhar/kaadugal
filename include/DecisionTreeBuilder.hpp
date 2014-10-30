@@ -86,6 +86,7 @@ namespace Kaadugal
 	    if(Quantiles[0] == Quantiles[Quantiles.size()-1])
 		return std::vector<VPFloat>(); // Looks like samples were all the same. This is bad
 
+
 	    // Compute n candidate thresholds by sampling in between n+1 approximate quantiles
 	    std::uniform_real_distribution<VPFloat> UniRealDist(0, 1); // [0, 1), NOTE the exclusive end
 	    int NumThresholds = Thresholds.size();
@@ -166,6 +167,11 @@ namespace Kaadugal
 	    struct InsetStruct
 	    {
 	    public:
+		InsetStruct(void)
+		{
+
+		};
+
 		InsetStruct(VPFloat Thresh, std::vector<VPFloat> Responses, T FeatureResponse)
 		    : s_Threshold(Thresh)
 		    , s_Responses(Responses)
@@ -177,12 +183,13 @@ namespace Kaadugal
 		std::vector<VPFloat> s_Responses;
 		T s_FeatureResponse;
 	    };
-	    std::vector<VPFloat> ObjValAccum;
-	    std::vector<InsetStruct> InsetStructAccum;
+	    std::vector<VPFloat> ObjValAccum(m_Parameters.m_NumCandidateFeatures*m_Parameters.m_NumCandidateThresholds, 0.0);
+	    std::vector<InsetStruct> InsetStructAccum(m_Parameters.m_NumCandidateFeatures*m_Parameters.m_NumCandidateThresholds);
 	    omp_set_dynamic(0); // Explicitly disable dynamic teams
-	    omp_set_num_threads(8);
+	    omp_set_num_threads(std::min(m_Parameters.m_NumThreads, omp_get_max_threads()));
+	    // std::cout << "Threads: " << std::min(m_Parameters.m_NumThreads, omp_get_max_threads()) << std::endl;
 
-// #pragma omp parallel for
+#pragma omp parallel for
 	    for(int i = 0; i < m_Parameters.m_NumCandidateFeatures; ++i)
 	    {
 		T FeatureResponse; // This creates an empty feature response with random response
@@ -216,8 +223,11 @@ namespace Kaadugal
 		    // Then compute some objective function value. Examples: information gain, Geni index
 		    VPFloat ObjVal = GetObjectiveValue(ParentNodeStats, LeftNodeStats, RightNodeStats);
 
-		    InsetStructAccum.push_back(InsetStruct(Thresholds[j], Responses, FeatureResponse));
-		    ObjValAccum.push_back(ObjVal);
+		    // InsetStructAccum.push_back(InsetStruct(Thresholds[j], Responses, FeatureResponse));
+		    // ObjValAccum.push_back(ObjVal);
+		    InsetStruct StructObj(Thresholds[j], Responses, FeatureResponse);
+		    InsetStructAccum[i*m_Parameters.m_NumCandidateThresholds + j] = StructObj;
+		    ObjValAccum[i*m_Parameters.m_NumCandidateThresholds + j] = ObjVal;
 
 		    // if(ObjVal >= OptObjVal)
 		    // {
@@ -234,8 +244,10 @@ namespace Kaadugal
 
 	    int AccumSize = ObjValAccum.size();
 	    int BestIdx = 0;
-	    for(int ii = 0; ii < AccumSize; ++ii)
+ 	    for(int ii = 0; ii < AccumSize; ++ii)
 	    {
+		if(InsetStructAccum[ii].s_Responses.size() < 1)
+		    continue;
 		if(ObjValAccum[ii] >= OptObjVal)
 		{
 		    OptObjVal = ObjValAccum[ii];

@@ -3,13 +3,34 @@
 
 #include <random>
 #include <algorithm>
+#include <omp.h>
 
 namespace Kaadugal
 {
-
-    // NOTE: This is a singleton class
+    // This is a singleton class but supports multiple *OpenMP* threads
+    // Note, however, that no other threading library is supported
+// See also http://stackoverflow.com/questions/15918758/how-to-make-each-thread-use-its-own-rng-in-c11
     class Randomizer
     {
+    private:
+	Randomizer(void)
+	{
+	    int nThreads = std::max(1, omp_get_max_threads());
+	    std::cout << "[ INFO ]: Maximum usable threads: " << nThreads << std::endl;
+	    for(int i = 0; i < nThreads; ++i)
+	    {
+		std::random_device SeedDevice;
+		m_RandEngines.push_back(std::mt19937(SeedDevice()));
+	    }
+	};
+	// You want to make sure they
+        // are unaccessable otherwise you may accidently get copies of
+        // your singleton appearing.
+        Randomizer(Randomizer const&); // Don't Implement
+        void operator=(Randomizer const&); // Don't implement
+
+	std::vector<std::mt19937> m_RandEngines;
+
     public:
 	static Randomizer& Get(void)
 	{
@@ -17,17 +38,12 @@ namespace Kaadugal
 	    return R;
 	};
 
-    	std::mt19937& GetRNG(void) { return m_RNG; };
-
-    private:
-	Randomizer(void) {};
-	// You want to make sure they
-        // are unaccessable otherwise you may accidently get copies of
-        // your singleton appearing.
-        Randomizer(Randomizer const&); // Don't Implement
-        void operator=(Randomizer const&); // Don't implement
-
-    	std::mt19937 m_RNG{ std::random_device{}() };
+    	std::mt19937& GetRNG(void)
+	{
+	    int ThreadID = omp_get_thread_num();
+	    // std::cout << "Thread ID: " << ThreadID << std::endl;
+	    return m_RandEngines[ThreadID];
+	};
     };
 } // namespace Kaadugal
 

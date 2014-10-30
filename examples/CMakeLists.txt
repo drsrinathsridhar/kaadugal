@@ -11,6 +11,13 @@ IF(OPENMP_FOUND)
   MESSAGE(STATUS "Found OpenMP and finished setting up appropriate compiler flags for C and C++")
 ENDIF()
 
+SET(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "possible configurations" FORCE)
+# In case the user does not setup CMAKE_BUILD_TYPE, assume it's Debug
+IF("${CMAKE_BUILD_TYPE}" STREQUAL "")
+  SET(CMAKE_BUILD_TYPE Debug CACHE STRING "build type default to Debug, set to Release to improve performance" FORCE)
+ENDIF("${CMAKE_BUILD_TYPE}" STREQUAL "")
+
+
 IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") # GCC on Linux
   # We need C++11 support
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -O3") # Enable lots of warning flags and optimization

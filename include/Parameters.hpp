@@ -25,14 +25,21 @@ namespace Kaadugal
 	TrainMethod m_TrainMethod;
 	bool m_isValid;
 	VPFloat m_MinGain; // Minimum gain to tolerate
+	int m_NumThreads; // If OpenMP is used
 	
-	ForestBuilderParameters(int NumTrees, int MaxLevels, int NumCandidateFeatures, int NumCandidateThresholds, VPFloat MinGain, TrainMethod Type = TrainMethod::DFS)
+	ForestBuilderParameters(const int& NumTrees, const int& MaxLevels
+				, const int& NumCandidateFeatures
+				, const int& NumCandidateThresholds
+				, const VPFloat& MinGain
+				, const TrainMethod& Type = TrainMethod::DFS
+				, const int&  NumThreads = 1)
 	    : m_NumTrees(NumTrees)
 	    , m_MaxLevels(MaxLevels)
 	    , m_NumCandidateFeatures(NumCandidateFeatures)
 	    , m_NumCandidateThresholds(NumCandidateThresholds)
 	    , m_TrainMethod(Type)
 	    , m_MinGain(MinGain)
+	    , m_NumThreads(NumThreads)
 	{
 
 	};
@@ -129,6 +136,11 @@ namespace Kaadugal
 				m_MinGain = VPFloat(std::atof(Value.c_str()));
 				ConfigCtr++;
 			    }
+			    if(Key == "NumThreads")
+			    {
+				m_NumThreads = std::max(1, std::atoi(Value.c_str()));
+				ConfigCtr++;
+			    }
 
 			    isKey = false;
 			    continue;
@@ -136,9 +148,9 @@ namespace Kaadugal
 		    }
 		}
 
-		if(ConfigCtr < 6) // Greater than 6 is fine because we can have other parameters in the config for client code
+		if(ConfigCtr < 7) // Greater is fine because we can have other parameters in the config for client code
 		{
-		    std::cout << "[ WARN ]: Some parameters are missing (read only " << ConfigCtr << "). Please check input." << std::endl;
+		    std::cout << "[ WARN ]: Some parameters are missing (read only " << ConfigCtr << " / 7). Please check input." << std::endl;
 		    m_isValid = false;
 		    return;
 		}
