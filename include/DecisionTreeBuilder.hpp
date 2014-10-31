@@ -60,7 +60,6 @@ namespace Kaadugal
 	    bool s_isValid;
 	};
 
-
     public:
 	DecisionTreeBuilder(const ForestBuilderParameters& Parameters)
 	    : m_Parameters(Parameters)
@@ -386,61 +385,61 @@ namespace Kaadugal
 
 	void BuildTreeFrontier(std::shared_ptr<DataSetIndex> DataSetIdx)
 	{
-	    // // TODO: Convert int to vector::type to avoid int overflow problems
-	    // // TODO: Avoid using push_back()?
-	    // // Using large integers
-	    // int64_t NumCandidateThresholds = m_Parameters.m_NumCandidateThresholds>DataSetIdx->Size()?m_Parameters.m_NumCandidateThresholds:DataSetIdx->Size();
-	    // int64_t NumSplitCandidates = m_Parameters.m_NumCandidateFeatures * NumCandidateThresholds;
-	    // int64_t NumFrontierNodes = m_FrontierIdx.size();
-	    // std::vector<S> AllStatistics(NumSplitCandidates*NumFrontierNodes);
-	    // // NOTE: This is different from Criminisi et al. We create a 3D matrix here.
-	    // // TODO: Most likely run out of memory if this is not done in smaller batches. Frontier must be small
-	    // // Also we use a single vector to denote the 3D matrix so that they are all contiguous in memory (heap as all vectors are)
-	    // // Dimensions are Rows (i, FeatureResponses) x Cols (j, Thresholds) x Depth (k, Frontier nodes)
-	    // std::vector<T> AllFeatureResponses(NumSplitCandidates*NumFrontierNodes);
-	    // std::vector<VPFloat> AllObjValues(NumSplitCandidates*NumFrontierNodes);
+	    // TODO: Convert int to vector::type to avoid int overflow problems
+	    // TODO: Avoid using push_back()?
+	    // Using large integers
+	    int64_t NumCandidateThresholds = m_Parameters.m_NumCandidateThresholds>DataSetIdx->Size()?m_Parameters.m_NumCandidateThresholds:DataSetIdx->Size();
+	    int64_t NumSplitCandidates = m_Parameters.m_NumCandidateFeatures * NumCandidateThresholds;
+	    int64_t NumFrontierNodes = m_FrontierIdx.size();
+	    std::vector<S> AllStatistics(NumSplitCandidates*NumFrontierNodes);
+	    // NOTE: This is different from Criminisi et al. We create a 3D matrix here.
+	    // TODO: Most likely run out of memory if this is not done in smaller batches. Frontier must be small
+	    // Also we use a single vector to denote the 3D matrix so that they are all contiguous in memory (heap as all vectors are)
+	    // Dimensions are Rows (i, FeatureResponses) x Cols (j, Thresholds) x Depth (k, Frontier nodes)
+	    std::vector<T> AllFeatureResponses(NumSplitCandidates*NumFrontierNodes);
+	    std::vector<VPFloat> AllObjValues(NumSplitCandidates*NumFrontierNodes, 0.0);
 
-	    // // Doing the two-pass strategy described in Efficient Implementation of Decision Forests by Criminisi et al.
-	    // // The first pass gives us proper candidate thresholds which are used in the second pass
-	    // int DataSetSize = DataSetIdx->Size();
-	    // // TODO: If there are very few points, make a leaf already
-	    // for(int DatItr = 0; DatItr < DataSetSize; ++DatItr) // TODO: Candidate for parallelization
-	    // {
-	    // 	// First find which node this data point reaches
-	    // 	int k = m_DataDeepestNodeIndex[DatItr];
-	    // 	if(std::find(m_FrontierIdx.begin(), m_FrontierIdx.end(), k) == m_FrontierIdx.end())
-	    // 	    continue; // Since the above k might reach the current "frontier", continue to the next data point
+	    // Doing the two-pass strategy described in Efficient Implementation of Decision Forests by Criminisi et al.
+	    // The first pass gives us proper candidate thresholds which are used in the second pass
+	    int DataSetSize = DataSetIdx->Size();
+	    // TODO: If there are very few points, make a leaf already
+	    for(int DatItr = 0; DatItr < DataSetSize; ++DatItr) // TODO: Candidate for parallelization
+	    {
+	    	// First find which node this data point reaches
+	    	int k = m_DataDeepestNodeIndex[DatItr];
+	    	if(std::find(m_FrontierIdx.begin(), m_FrontierIdx.end(), k) == m_FrontierIdx.end())
+	    	    continue; // Since the above k might reach the current "frontier", continue to the next data point
 
-	    // 	for(int FeatCtr = 0; FeatCtr < m_Parameters.m_NumCandidateFeatures; ++FeatCtr)
-	    // 	{
-	    // 	    T FeatureResponse; // This creates an empty feature response with random response
-	    // 	    std::vector<VPFloat> Responses;
-	    // 	    int DataSetSize = DataSetIdx->Size();
-	    // 	    for(int k = 0; k < DataSetSize; ++k)
-	    // 		Responses.push_back(FeatureResponse.GetResponse(DataSetIdx->GetDataPoint(k))); // TODO: Can be parallelized/made more efficient?
+	    	for(int FeatCtr = 0; FeatCtr < m_Parameters.m_NumCandidateFeatures; ++FeatCtr)
+	    	{
+	    	    T FeatureResponse; // This creates an empty feature response with random response
+	    	    std::vector<VPFloat> Responses;
+	    	    int DataSetSize = DataSetIdx->Size();
+	    	    for(int k = 0; k < DataSetSize; ++k)
+	    		Responses.push_back(FeatureResponse.GetResponse(DataSetIdx->GetDataPoint(k))); // TODO: Can be parallelized/made more efficient?
 
-	    // 	    const std::vector<VPFloat>& Thresholds = SelectThresholds(PartitionedDataSetIdx, Responses);
-	    // 	    int NumThresholds = Thresholds.size();
-	    // 	    for(int ThreshCtr = 0; ThreshCtr < NumThresholds; ++ThreshCtr)
-	    // 	    {
-	    // 		// First partition data based on current splitting candidates
-	    // 		std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets = Partition(DataSetIdx, Responses, Thresholds[ThreshCtr]);
+	    	    const std::vector<VPFloat>& Thresholds = SelectThresholds(PartitionedDataSetIdx, Responses);
+	    	    int NumThresholds = Thresholds.size();
+	    	    for(int ThreshCtr = 0; ThreshCtr < NumThresholds; ++ThreshCtr)
+	    	    {
+	    		// First partition data based on current splitting candidates
+	    		std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets = Partition(DataSetIdx, Responses, Thresholds[ThreshCtr]);
 
-	    // 		S LeftNodeStats(Subsets.first);
-	    // 		S RightNodeStats(Subsets.second);
+	    		S LeftNodeStats(Subsets.first);
+	    		S RightNodeStats(Subsets.second);
 		    
-	    // 		// Then compute some objective function value. Examples: information gain, Geni index
-	    // 		VPFloat ObjVal = GetObjectiveValue(ParentNodeStats, LeftNodeStats, RightNodeStats);
-	    // 		AllObjValues[] = ObjVal;
-	    // 		AllFeatureResponses[] = 
-	    // 	    }
-	    // 	}
-	    // }
+	    		// Then compute some objective function value. Examples: information gain, Geni index
+	    		VPFloat ObjVal = GetObjectiveValue(ParentNodeStats, LeftNodeStats, RightNodeStats);
+	    		AllObjValues[] = ObjVal;
+	    		AllFeatureResponses[] = 
+	    	    }
+	    	}
+	    }
 
-	    // // Find optimal feature responses and thresholds and stuff
+	    // Find optimal feature responses and thresholds and stuff
 
-	    // // Update Frontier
-	    // UpdateFrontierIdx();
+	    // Update Frontier
+	    UpdateFrontierIdx();
 	};
 
 	void UpdateFrontierIdx(void)
