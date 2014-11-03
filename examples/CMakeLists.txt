@@ -1,5 +1,11 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
+SET(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "possible configurations" FORCE)
+# In case the user does not setup CMAKE_BUILD_TYPE, assume it's Debug
+IF("${CMAKE_BUILD_TYPE}" STREQUAL "")
+  SET(CMAKE_BUILD_TYPE Debug CACHE STRING "build type default to Debug, set to Release to improve performance" FORCE)
+ENDIF("${CMAKE_BUILD_TYPE}" STREQUAL "")
+
 # Project classify
 SET(PROJECT1 classify)
 PROJECT(${PROJECT1})
@@ -12,13 +18,6 @@ IF(OPENMP_FOUND)
 ELSE()
   MESSAGE(WARNING "OpenMP NOT found. Parallelization features will not be available.")
 ENDIF()
-
-SET(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "possible configurations" FORCE)
-# In case the user does not setup CMAKE_BUILD_TYPE, assume it's Debug
-IF("${CMAKE_BUILD_TYPE}" STREQUAL "")
-  SET(CMAKE_BUILD_TYPE Debug CACHE STRING "build type default to Debug, set to Release to improve performance" FORCE)
-ENDIF("${CMAKE_BUILD_TYPE}" STREQUAL "")
-
 
 IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") # GCC on Linux
   # We need C++11 support

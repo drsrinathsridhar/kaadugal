@@ -15,10 +15,29 @@ namespace Kaadugal
     template<class T, class S, class R>
     class DecisionTree
     {
+	// TODO: Many methods need to be made const
     private:
 	std::vector<DecisionNode<T, S, R>> m_Nodes;
 	int m_MaxDecisionLevels; // The root node is level 0
 	int m_NumNodes;
+
+	int TraverseRecursive(const std::shared_ptr<AbstractDataPoint>& DataPointPtr, int NodeIndex)
+	{
+	    int OutputNodeIndex = NodeIndex;
+	    if(m_Nodes[NodeIndex].GetType() == Kaadugal::NodeType::LeafNode
+	       || m_Nodes[NodeIndex].GetType() == Kaadugal::NodeType::Invalid) // Termination condition
+	    {
+		return OutputNodeIndex;
+	    }
+
+	    if(m_Nodes[NodeIndex].GetFeatureResponse().GetResponse(DataPointPtr) > m_Nodes[NodeIndex].GetThreshold()) // Go left. This is same logic as in Tree builder, partition
+		OutputNodeIndex = TraverseRecursive(DataPointPtr, 2*NodeIndex+1);
+	    else // Go right
+		OutputNodeIndex = TraverseRecursive(DataPointPtr, 2*NodeIndex+2);		
+
+	    return OutputNodeIndex;
+	};
+
 
     public:
 	DecisionTree(int MaxDecisionLevels = 0)
@@ -90,6 +109,17 @@ namespace Kaadugal
 		TestRecursive(DataPointPtr, 2*NodeIndex+1, TreeLeafStats);
 	    else // Go right
 		TestRecursive(DataPointPtr, 2*NodeIndex+2, TreeLeafStats);		
+	};
+
+	// Return the node index for the leaf or the first invalid node reached by the data point
+	int TraverseToFrontier(std::shared_ptr<AbstractDataPoint> DataPointPtr)
+	{
+	    if(GetNumNodes() <= 0)
+		std::cout << "[ WARN ]: No nodes in this tree. Check config." << std::endl;
+
+	    int FrontierIndex = TraverseRecursive(DataPointPtr, 0);
+
+	    return FrontierIndex;
 	};
 
 	bool isValid(void)

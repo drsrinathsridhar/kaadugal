@@ -13,6 +13,8 @@
 #include "Randomizer.hpp"
 #include "Utilities.hpp"
 
+// TODO: Convert int to vector::type to avoid int overflow problems
+// TODO: Avoid using push_back()?
 namespace Kaadugal
 {
     // T: AbstractFeatureResponse which is the feature response function or weak learner
@@ -28,7 +30,7 @@ namespace Kaadugal
 	bool m_isTreeTrained;
 
 	// Members for bread-first building
-	std::vector<int> m_FrontierIdx; // Is not strictly the frontier but a subset with all non-built nodes
+	std::vector<int> m_FrontierNodes; // Is not strictly the frontier but a subset with all non-built nodes
 	std::vector<int> m_DataDeepestNodeIndex; // Stores the node index of the (currently) lowest node that a data point reaches. Same size as the number of data points
 
 	// When training tree separately, we need a pointer to the data
@@ -168,7 +170,7 @@ namespace Kaadugal
 		for(int k = 0; k < DataSetSize; ++k)
 		    Responses.push_back(FeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k))); // TODO: Can be parallelized/made more efficient?
 
-		const std::vector<VPFloat>& Thresholds = SelectThresholds(PartitionedDataSetIdx, Responses);
+		const std::vector<VPFloat>& Thresholds = SelectThresholds(Responses, PartitionedDataSetIdx->Size());
 		int NumThresholds = Thresholds.size();
 		// for(int j = 0; j < NumThresholds; ++j)
 		//     std::cout << Thresholds[j] << "\t";
@@ -262,7 +264,7 @@ namespace Kaadugal
 	    // 	std::cout << "OptThreshold: " << OptThreshold << std::endl;
 	    // }
 
-	    // Check for some recursion termination conditions
+	    // Check for recursion termination conditions
 	    // No gain or very small gain
 	    if(OptObjVal == 0.0 || OptObjVal < m_Parameters.m_MinGain)
 	    {
@@ -295,90 +297,171 @@ namespace Kaadugal
 	{
 	    // All the incoming data reaches the root for sure
 	    m_DataDeepestNodeIndex.resize(DataSetIdx->Size(), 0); // Later this is updated inside BuildTreeFrontier()
-	    UpdateFrontierIdx(); // Update before starting. Later this is called inside BuildTreeFrontier()
+	    UpdateFrontierNodes(); // Update before starting. Later this is called inside BuildTreeFrontier()
 
 	    for(int i = 0; i < m_Tree->GetMaxDecisionLevels(); ++i)
+	    {
 		BuildTreeFrontier(DataSetIdx);
+		UpdateFrontierNodes();
+	    }
 	    
 	    return true;
 	};
 
 	void BuildTreeFrontier(std::shared_ptr<DataSetIndex> DataSetIdx)
 	{
-	    // TODO: Convert int to vector::type to avoid int overflow problems
-	    // TODO: Avoid using push_back()?
+	    int64_t DataSetSize = DataSetIdx->Size();
+
+	    // Check if incoming data is fewer than 3 data points at the root. If so then just create a leaf node
+	    // It's 3 (instead of 2) because otherwise the SelectThresholds() could return 1 which is problematic
+	    if(DataSetSize < 3) // TODO: Make this an external parameter?
+	    {
+	    	m_Tree->GetNode(0).MakeLeafNode(S(DataSetIdx)); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
+	    	return;
+	    }
+
 	    // Using large integers - uint64_t
-	    int64_t NumCandidateThresholds = m_Parameters.m_NumCandidateThresholds>DataSetIdx->Size()?m_Parameters.m_NumCandidateThresholds:DataSetIdx->Size();
+	    int64_t NumCandidateThresholds = DataSetSize>m_Parameters.m_NumCandidateThresholds?m_Parameters.m_NumCandidateThresholds:(DataSetSize-1);
 	    int64_t NumSplitCandidates = m_Parameters.m_NumCandidateFeatures * NumCandidateThresholds;
-	    int64_t NumFrontierNodes = m_FrontierIdx.size();
-	    std::vector<S> AllStatistics(NumSplitCandidates*NumFrontierNodes);
+	    int64_t NumFrontierNodes = m_FrontierNodes.size();
 	    // NOTE: This is different from Criminisi et al. We create a 3D matrix here.
 	    // TODO: Most likely run out of memory if this is not done in smaller batches. Frontier must be small
 	    // Also we use a single vector to denote the 3D matrix so that they are all contiguous in memory (heap as all vectors are)
 	    // Dimensions are Rows (i, FeatureResponses) x Cols (j, Thresholds) x Depth (k, Frontier nodes)
-	    std::vector<T> AllFeatureResponses(NumSplitCandidates*NumFrontierNodes);
-	    std::vector<VPFloat> AllObjValues(NumSplitCandidates*NumFrontierNodes, 0.0);
+	    std::vector<S> AllParentNodeStatistics(NumFrontierNodes);
+	    std::vector<S> AllLeftNodeStatistics(NumSplitCandidates*NumFrontierNodes);
+	    std::vector<S> AllRightNodeStatistics(NumSplitCandidates*NumFrontierNodes);
+	    std::vector<T> AllFeatureResponses(m_Parameters.m_NumCandidateFeatures*NumFrontierNodes); // Rows are features, 3 dimension is frontier
+	    // TODO: Change to shared_ptr?
+	    std::vector<VPFloat> AllThresholds(NumSplitCandidates*NumFrontierNodes); // Rows are features, cols are thresholds, 3 dimension is frontier. It is stored column-first, row-next and 3D last
+	    std::vector<std::vector<VPFloat>> AllResponses(m_Parameters.m_NumCandidateFeatures*NumFrontierNodes); // Rows are features, 3 dimension is frontier
+	    std::vector<int> FrontierDataSize(NumFrontierNodes, 0);
 
-	    // Doing the two-pass strategy described in Efficient Implementation of Decision Forests by Criminisi et al.
-	    // The first pass gives us proper candidate thresholds which are used in the second pass
-	    int DataSetSize = DataSetIdx->Size();
-	    // TODO: If there are very few points, make a leaf already
+	    for(int kk = 0; kk < DataSetSize; ++kk)
+	    {
+	    	int ReachedFrontier = m_Tree->TraverseToFrontier(DataSetIdx->GetDataPoint(kk)); // Find which node this data point reaches
+	    	if(std::find(m_FrontierNodes.begin(), m_FrontierNodes.end(), ReachedFrontier) == m_FrontierNodes.end())
+	    	    continue; // Since the above ReachedFrontier might NOT reach the current "frontier", continue to the next data point
+
+		FrontierDataSize[ReachedFrontier]++;
+		std::vector<int> LoneDataIdx(1, kk);
+		if(AllParentNodeStatistics[ReachedFrontier].isValid())
+		{
+		    auto NewStats = std::make_shared<S>(S(std::make_shared<DataSetIndex>(DataSetIndex(DataSetIdx->GetDataSet(), LoneDataIdx))));
+		    AllParentNodeStatistics[ReachedFrontier].Merge(NewStats);
+		}
+		else
+		    AllParentNodeStatistics[ReachedFrontier] = S(std::make_shared<DataSetIndex>(DataSetIndex(DataSetIdx->GetDataSet(), LoneDataIdx)));
+
+	    	for(int ii = 0; ii < m_Parameters.m_NumCandidateFeatures; ++ii)
+		{
+		    int64_t FeatureIdx = ReachedFrontier*m_Parameters.m_NumCandidateFeatures + ii;
+	    	    AllResponses[FeatureIdx].push_back(AllFeatureResponses[FeatureIdx].GetResponse(DataSetIdx->GetDataPoint(kk)));
+		}
+	    }
+
+	    for(int jj = 0; jj < NumFrontierNodes; ++jj)
+	    {
+		for(int ii = 0; ii < m_Parameters.m_NumCandidateFeatures; ++ii)
+		{
+		    int64_t FeatureIdx = jj*m_Parameters.m_NumCandidateFeatures + ii;
+		    std::vector<VPFloat> Thresholds = SelectThresholds(AllResponses[FeatureIdx], FrontierDataSize[jj]);
+		    // TODO: This is wasteful, move around pointers instead
+		    for(int ll = 0; ll < NumCandidateThresholds; ++ll)
+			AllThresholds[jj*NumSplitCandidates + ii*NumCandidateThresholds + ll] = Thresholds[ll];
+		}
+	    }
+
 	    for(int DatItr = 0; DatItr < DataSetSize; ++DatItr) // TODO: Candidate for parallelization
 	    {
-	    	// First find which node this data point reaches
-	    	int k = m_DataDeepestNodeIndex[DatItr];
-	    	if(std::find(m_FrontierIdx.begin(), m_FrontierIdx.end(), k) == m_FrontierIdx.end())
-	    	    continue; // Since the above k might reach the current "frontier", continue to the next data point
+	    	int ReachedFrontier = m_Tree->TraverseToFrontier(DataSetIdx->GetDataPoint(DatItr)); // Find which node this data point reaches
+	    	if(std::find(m_FrontierNodes.begin(), m_FrontierNodes.end(), ReachedFrontier) == m_FrontierNodes.end())
+	    	    continue; // Since the above ReachedFrontier might NOT reach the current "frontier", continue to the next data point
 
 	    	for(int FeatCtr = 0; FeatCtr < m_Parameters.m_NumCandidateFeatures; ++FeatCtr)
 	    	{
-	    	    T FeatureResponse; // This creates an empty feature response with random response
-	    	    std::vector<VPFloat> Responses;
-	    	    int DataSetSize = DataSetIdx->Size();
-	    	    for(int k = 0; k < DataSetSize; ++k)
-	    		Responses.push_back(FeatureResponse.GetResponse(DataSetIdx->GetDataPoint(k))); // TODO: Can be parallelized/made more efficient?
-
-	    	    const std::vector<VPFloat>& Thresholds = SelectThresholds(DataSetIdx, Responses);
-	    	    int NumThresholds = Thresholds.size();
-	    	    for(int ThreshCtr = 0; ThreshCtr < NumThresholds; ++ThreshCtr)
+	    	    for(int ThreshCtr = 0; ThreshCtr < NumCandidateThresholds; ++ThreshCtr)
 	    	    {
-	    		// First partition data based on current splitting candidates
-	    		std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets = Partition(DataSetIdx, Responses, Thresholds[ThreshCtr]);
+			int64_t FeatureIdx = ReachedFrontier*m_Parameters.m_NumCandidateFeatures + FeatCtr;
+			VPFloat Response = AllFeatureResponses[FeatureIdx].GetResponse(DataSetIdx->GetDataPoint(DatItr));
+			VPFloat Threshold = AllThresholds[ReachedFrontier*NumSplitCandidates + FeatCtr*NumCandidateThresholds + ThreshCtr];
 
-	    		S LeftNodeStats(Subsets.first);
-	    		S RightNodeStats(Subsets.second);
-		    
-	    		// Then compute some objective function value. Examples: information gain, Geni index
-	    		VPFloat ObjVal = GetObjectiveValue(ParentNodeStats, LeftNodeStats, RightNodeStats);
-	    		AllObjValues[] = ObjVal;
-	    		AllFeatureResponses[] = 
+			int64_t RowFirst3DIndex = ReachedFrontier*NumSplitCandidates + ThreshCtr*m_Parameters.m_NumCandidateFeatures + FeatCtr;
+			std::vector<int> LoneDataIdx(1, DatItr);
+			if(Response > Threshold) // Same logic as partitioning and testing the tree
+			{
+			    if(AllLeftNodeStatistics[RowFirst3DIndex].isValid())
+			    {
+				auto NewStats = std::make_shared<S>(S(std::make_shared<DataSetIndex>(DataSetIndex(DataSetIdx->GetDataSet(), LoneDataIdx))));
+				AllLeftNodeStatistics[RowFirst3DIndex].Merge(NewStats);
+			    }
+			    else
+				AllLeftNodeStatistics[RowFirst3DIndex] = S(std::make_shared<DataSetIndex>(DataSetIndex(DataSetIdx->GetDataSet(), LoneDataIdx)));
+			}
+			else
+			{
+			    if(AllRightNodeStatistics[ReachedFrontier].isValid())
+			    {
+				auto NewStats = std::make_shared<S>(S(std::make_shared<DataSetIndex>(DataSetIndex(DataSetIdx->GetDataSet(), LoneDataIdx))));
+				AllRightNodeStatistics[ReachedFrontier].Merge(NewStats);
+			    }
+			    else
+				AllRightNodeStatistics[ReachedFrontier] = S(std::make_shared<DataSetIndex>(DataSetIndex(DataSetIdx->GetDataSet(), LoneDataIdx)));
+			}
 	    	    }
 	    	}
 	    }
 
-	    // Find optimal feature responses and thresholds and stuff
+	    // // Find optimal feature responses and thresholds and stuff
+	    // // Loop over each frontier 3D plane
+	    // std::vector<VPFloat> OptObjVal(NumFrontierNodes, 0.0);
+	    // std::vector<T> OptFeatureResponse(NumFrontierNodes);
+	    // for(int FrontierIdx = 0; FrontierIdx < NumFrontierNodes; ++FrontierIdx) // TODO: Candidate for parallelization
+	    // {
+	    // 	for(int FeatCtr = 0; FeatCtr < m_Parameters.m_NumCandidateFeatures; ++FeatCtr)
+	    // 	{
+	    // 	    for(int ThreshCtr = 0; ThreshCtr < NumCandidateThresholds; ++ThreshCtr)
+	    // 	    {
+	    // 		int Index3D = (FrontierIdx*NumSplitCandidates)+(FeatCtr*NumCandidateThresholds+ThreshCtr); // Careful, this is 3D linear indexing
+	    // 		if(AllObjValues[Index3D] >= OptObjVal[FrontierIdx])
+	    // 		{
+	    // 		    OptObjVal[FrontierIdx] = AllObjValues[Index3D];
+	    // 		    OptFeatureResponse[FrontierIdx] = AllFeatureResponses[Index3D];
+	    // 		    OptThreshold[FrontierIdx] = AllThresholds[Index3D];
+	    // 		}
+	    // 	    }
+	    // 	}
 
-	    // Update Frontier
-	    UpdateFrontierIdx();
+	    // 	// Check for leaf creation condition
+	    // 	// No gain or very small gain
+	    // 	if(OptObjVal[FrontierIdx] == 0.0 || OptObjVal[FrontierIdx] < m_Parameters.m_MinGain)
+	    // 	{
+	    // 	    m_Tree->GetNode(m_FrontierNodes[FrontierIdx]).MakeLeafNode(AllFrontierStats[FrontierIdx]); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
+	    // 	    continue;
+	    // 	}
+
+	    // 	// Now free to make a split node
+	    // 	m_Tree->GetNode(NodeIndex).MakeSplitNode(AllFrontierStats[FrontierIdx], OptFeatureResponse[FrontierIdx], OptThreshold[FrontierIdx]);
+	    // }
 	};
 
-	void UpdateFrontierIdx(void)
+	void UpdateFrontierNodes(void)
 	{
-	    if(m_FrontierIdx.size() == 0) // First iteration, the frontier has nothing so we add the root to the frontier
+	    if(m_FrontierNodes.size() == 0) // First iteration, the frontier has nothing so we add the root to the frontier
 	    {
-		m_FrontierIdx.push_back(0);
+		m_FrontierNodes.push_back(0);
 		return;
 	    }
 
-	    std::vector<int> LocalFrontIdx = m_FrontierIdx;
-	    m_FrontierIdx.clear();
+	    std::vector<int> LocalFrontIdx = m_FrontierNodes;
+	    m_FrontierNodes.clear();
 	    for(auto itr = LocalFrontIdx.begin(); itr != LocalFrontIdx.end(); ++itr)
 	    {
 		int NodeIndex = (*itr);
 		if(m_Tree->GetNode(NodeIndex).GetType() == Kaadugal::NodeType::Invalid)
 		{
 		    std::cout << "[ WARN ]: Something is not right. Frontier has an invalid node which should never happen. Will NOT update frontier." << std::endl;
-		    m_FrontierIdx = LocalFrontIdx;
+		    m_FrontierNodes = LocalFrontIdx;
 		    return;
 		}
 
@@ -388,16 +471,16 @@ namespace Kaadugal
 
 		// }
 
-		if(m_Tree->GetNode(NodeIndex).GetType() == Kaadugal::NodeType::SplitNode) // 
+		if(m_Tree->GetNode(NodeIndex).GetType() == Kaadugal::NodeType::SplitNode)
 		{
 		    // Add it's two children to the frontier
-		    m_FrontierIdx.push_back(2*NodeIndex + 1); // Left child
-		    m_FrontierIdx.push_back(2*NodeIndex + 2); // Right child
+		    m_FrontierNodes.push_back(2*NodeIndex + 1); // Left child
+		    m_FrontierNodes.push_back(2*NodeIndex + 2); // Right child
 		}
 	    }
 	};
 
-	std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Partition(std::shared_ptr<DataSetIndex> ParentDataSetIdx, const std::vector<VPFloat>& Responses, VPFloat Threshold)
+	std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Partition(std::shared_ptr<DataSetIndex> ParentDataSetIdx, const std::vector<VPFloat>& Responses, VPFloat Threshold) const
 	{
 	    std::vector<int> LeftSubsetPts;
 	    std::vector<int> RightSubsetPts;
@@ -413,8 +496,10 @@ namespace Kaadugal
 				  , std::shared_ptr<DataSetIndex>(new DataSetIndex(ParentDataSetIdx->GetDataSet(), RightSubsetPts)));
 	};
 
-	const std::vector<VPFloat> SelectThresholds(std::shared_ptr<DataSetIndex> DataSubsetIdx, const std::vector<VPFloat>& Responses)
+	const std::vector<VPFloat> SelectThresholds(const std::vector<VPFloat>& Responses, const int DataSubsetSize)
 	{
+	    // std::cout << "Dataset Size: " << DataSubsetIdx->Size() << std::endl;
+	    // std::cout << "Responses Size: " << Responses.size() << std::endl;
 	    // Please see Efficient Implementation of Decision Forests, Shotton et al. 2013
 	    // Section 21.3.3 explains how to implement this threshold selection using quantiles
 	    // Also see the Sherwood Library from Microsoft Research
@@ -422,10 +507,10 @@ namespace Kaadugal
 	    std::vector<VPFloat> Quantiles(m_Parameters.m_NumCandidateThresholds + 1); // TODO: Candidate for memory saving
 
 	    // This isn't ideal because if size of data subset is only a few above NumThresh, then Randomizer will repeat some values
-	    if(DataSubsetIdx->Size() > m_Parameters.m_NumCandidateThresholds)
+	    if(DataSubsetSize > m_Parameters.m_NumCandidateThresholds)
 	    {
 		// Sample m_NumCandidateThresholds+1 times (uniformly randomly) from Responses
-		std::uniform_int_distribution<int> UniDist(0, int(DataSubsetIdx->Size()-1)); // Both inclusive
+		std::uniform_int_distribution<int> UniDist(0, int(DataSubsetSize-1)); // Both inclusive
 		for(int i = 0; i < m_Parameters.m_NumCandidateThresholds + 1; i++)
 		    Quantiles[i] = Responses[UniDist(Randomizer::Get().GetRNG())];
 	    }
