@@ -299,8 +299,10 @@ namespace Kaadugal
 	    m_DataDeepestNodeIndex.resize(DataSetIdx->Size(), 0); // Later this is updated inside BuildTreeFrontier()
 	    UpdateFrontierNodes(); // Update before starting. Later this is called inside BuildTreeFrontier()
 
+	    std::cout << "[ INFO ]: At depth: " << std::flush;
 	    for(int i = 0; i < m_Tree->GetMaxDecisionLevels(); ++i)
 	    {
+		std::cout << i << " " << std::flush;
 		BuildTreeFrontier(DataSetIdx);
 		UpdateFrontierNodes();
 	    }
@@ -400,49 +402,52 @@ namespace Kaadugal
 			}
 			else
 			{
-			    if(AllRightNodeStatistics[ReachedFrontier].isValid())
+			    if(AllRightNodeStatistics[RowFirst3DIndex].isValid())
 			    {
 				auto NewStats = std::make_shared<S>(S(std::make_shared<DataSetIndex>(DataSetIndex(DataSetIdx->GetDataSet(), LoneDataIdx))));
-				AllRightNodeStatistics[ReachedFrontier].Merge(NewStats);
+				AllRightNodeStatistics[RowFirst3DIndex].Merge(NewStats);
 			    }
 			    else
-				AllRightNodeStatistics[ReachedFrontier] = S(std::make_shared<DataSetIndex>(DataSetIndex(DataSetIdx->GetDataSet(), LoneDataIdx)));
+				AllRightNodeStatistics[RowFirst3DIndex] = S(std::make_shared<DataSetIndex>(DataSetIndex(DataSetIdx->GetDataSet(), LoneDataIdx)));
 			}
 	    	    }
 	    	}
 	    }
 
-	    // // Find optimal feature responses and thresholds and stuff
-	    // // Loop over each frontier 3D plane
-	    // std::vector<VPFloat> OptObjVal(NumFrontierNodes, 0.0);
-	    // std::vector<T> OptFeatureResponse(NumFrontierNodes);
-	    // for(int FrontierIdx = 0; FrontierIdx < NumFrontierNodes; ++FrontierIdx) // TODO: Candidate for parallelization
-	    // {
-	    // 	for(int FeatCtr = 0; FeatCtr < m_Parameters.m_NumCandidateFeatures; ++FeatCtr)
-	    // 	{
-	    // 	    for(int ThreshCtr = 0; ThreshCtr < NumCandidateThresholds; ++ThreshCtr)
-	    // 	    {
-	    // 		int Index3D = (FrontierIdx*NumSplitCandidates)+(FeatCtr*NumCandidateThresholds+ThreshCtr); // Careful, this is 3D linear indexing
-	    // 		if(AllObjValues[Index3D] >= OptObjVal[FrontierIdx])
-	    // 		{
-	    // 		    OptObjVal[FrontierIdx] = AllObjValues[Index3D];
-	    // 		    OptFeatureResponse[FrontierIdx] = AllFeatureResponses[Index3D];
-	    // 		    OptThreshold[FrontierIdx] = AllThresholds[Index3D];
-	    // 		}
-	    // 	    }
-	    // 	}
+	    // Find optimal feature responses and thresholds and stuff
+	    // Loop over each frontier 3D plane
+	    std::vector<VPFloat> OptObjVal(NumFrontierNodes, 0.0);
+	    std::vector<VPFloat> OptThreshold(NumFrontierNodes, 0.0);
+	    std::vector<T> OptFeatureResponse(NumFrontierNodes);
+	    for(int FrontierIdx = 0; FrontierIdx < NumFrontierNodes; ++FrontierIdx) // TODO: Candidate for parallelization
+	    {
+	    	for(int FeatCtr = 0; FeatCtr < m_Parameters.m_NumCandidateFeatures; ++FeatCtr)
+	    	{
+	    	    for(int ThreshCtr = 0; ThreshCtr < NumCandidateThresholds; ++ThreshCtr)
+	    	    {
+			int64_t RowFirst3DIndex = FrontierIdx*NumSplitCandidates + ThreshCtr*m_Parameters.m_NumCandidateFeatures + FeatCtr;
+			VPFloat ObjVal = GetObjectiveValue(AllParentNodeStatistics[FrontierIdx], AllLeftNodeStatistics[RowFirst3DIndex], AllRightNodeStatistics[RowFirst3DIndex]);
+	    		if(ObjVal >= OptObjVal[FrontierIdx])
+	    		{
+	    		    OptObjVal[FrontierIdx] = ObjVal;
+	    		    OptFeatureResponse[FrontierIdx] = AllFeatureResponses[FrontierIdx*NumSplitCandidates + FeatCtr]; // This is 2D indexed
+			    int64_t ColFirst3DIndex = FrontierIdx*NumSplitCandidates + FeatCtr*NumCandidateThresholds + ThreshCtr;
+	    		    OptThreshold[FrontierIdx] = AllThresholds[ColFirst3DIndex];
+	    		}
+	    	    }
+	    	}
 
-	    // 	// Check for leaf creation condition
-	    // 	// No gain or very small gain
-	    // 	if(OptObjVal[FrontierIdx] == 0.0 || OptObjVal[FrontierIdx] < m_Parameters.m_MinGain)
-	    // 	{
-	    // 	    m_Tree->GetNode(m_FrontierNodes[FrontierIdx]).MakeLeafNode(AllFrontierStats[FrontierIdx]); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
-	    // 	    continue;
-	    // 	}
+	    	// Check for leaf creation condition
+	    	// No gain or very small gain
+	    	if(OptObjVal[FrontierIdx] == 0.0 || OptObjVal[FrontierIdx] < m_Parameters.m_MinGain)
+	    	{
+	    	    m_Tree->GetNode(m_FrontierNodes[FrontierIdx]).MakeLeafNode(AllParentNodeStatistics[FrontierIdx]); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
+	    	    continue;
+	    	}
 
-	    // 	// Now free to make a split node
-	    // 	m_Tree->GetNode(NodeIndex).MakeSplitNode(AllFrontierStats[FrontierIdx], OptFeatureResponse[FrontierIdx], OptThreshold[FrontierIdx]);
-	    // }
+	    	// Now free to make a split node
+	    	m_Tree->GetNode(m_FrontierNodes[FrontierIdx]).MakeSplitNode(AllParentNodeStatistics[FrontierIdx], OptFeatureResponse[FrontierIdx], OptThreshold[FrontierIdx]);
+	    }
 	};
 
 	void UpdateFrontierNodes(void)
