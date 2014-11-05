@@ -229,7 +229,8 @@ namespace Kaadugal
 	    }
 
 	    std::vector<VPFloat> DataResponses(DataSetSize);
-	    for(int k = 0; k < DataSetSize; ++k) // TODO: Should be parallelized since this is outside of the above parallel section
+#pragma omp parallel for
+	    for(int k = 0; k < DataSetSize; ++k)
 		DataResponses[k] = OptFeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k));
 
 	    std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets = Partition(PartitionedDataSetIdx, DataResponses, OptThreshold);
@@ -280,15 +281,8 @@ namespace Kaadugal
 	    // Now recurse :)
 	    // Since we store the decision tree as a full binary tree (in
 	    // breadth-first order) we can easily get the left and right children indices
-	    if(OptLeftPartitionIdx->Size() > 0)
-		BuildTreeDepthFirst(OptLeftPartitionIdx, 2*NodeIndex+1, CurrentNodeDepth+1);
-	    else
-		std::cout << "[ WARN ]: No data so not recursing." << std::endl;
-
-	    if(OptRightPartitionIdx->Size() > 0)
-		BuildTreeDepthFirst(OptRightPartitionIdx, 2*NodeIndex+2, CurrentNodeDepth+1);
-	    else
-		std::cout << "[ WARN ]: No data so not recursing." << std::endl;
+	    BuildTreeDepthFirst(OptLeftPartitionIdx, 2*NodeIndex+1, CurrentNodeDepth+1);
+	    BuildTreeDepthFirst(OptRightPartitionIdx, 2*NodeIndex+2, CurrentNodeDepth+1);
 	    	    
 	    return true;
 	};

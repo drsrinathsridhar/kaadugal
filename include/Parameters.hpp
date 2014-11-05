@@ -166,8 +166,8 @@ namespace Kaadugal
 		    std::cout << "[ Training Method     ]: " << "Breadth First" << std::endl;
 		if(m_TrainMethod == TrainMethod::Hybrid)
 		    std::cout << "[ Training Method     ]: " << "Hybrid depth/breadth First" << std::endl;
-		std::cout << "[ Num of Thresholds   ]: " << m_NumCandidateThresholds << std::endl;
-		std::cout << "[ Num of Features     ]: " << m_NumCandidateFeatures << std::endl;
+		std::cout << "[ Num of Cand Thresholds  ]: " << m_NumCandidateThresholds << std::endl;
+		std::cout << "[ Num of Cand Features    ]: " << m_NumCandidateFeatures << std::endl;
 		std::cout << "[ Minimum Gain        ]: " << m_MinGain << std::endl;
 	    }
 	    else
