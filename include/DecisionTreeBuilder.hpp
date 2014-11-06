@@ -78,7 +78,7 @@ namespace Kaadugal
 	    m_TimeStartedBuild = GetCurrentEpochTime();
 	    if(m_Parameters.m_TrainMethod == TrainMethod::DFS)
 	    {
-		std::cout << "[ INFO ]: At depth: ";
+		std::cout << "[ INFO ]: At depth: " << std::flush;
 	    	Success = BuildTreeDepthFirst(PartitionedDataSetIdx, 0, 0);
 	    }
 	    if(m_Parameters.m_TrainMethod == TrainMethod::BFS)
@@ -281,10 +281,11 @@ namespace Kaadugal
 	    // Now recurse :)
 	    // Since we store the decision tree as a full binary tree (in
 	    // breadth-first order) we can easily get the left and right children indices
-	    BuildTreeDepthFirst(OptLeftPartitionIdx, 2*NodeIndex+1, CurrentNodeDepth+1);
-	    BuildTreeDepthFirst(OptRightPartitionIdx, 2*NodeIndex+2, CurrentNodeDepth+1);
+	    bool Success = true;
+	    Success &= BuildTreeDepthFirst(OptLeftPartitionIdx, 2*NodeIndex+1, CurrentNodeDepth+1);
+	    Success &= BuildTreeDepthFirst(OptRightPartitionIdx, 2*NodeIndex+2, CurrentNodeDepth+1);
 	    	    
-	    return true;
+	    return Success;
 	};
 
 	bool BuildTreeBreadthFirst(std::shared_ptr<DataSetIndex> DataSetIdx)
