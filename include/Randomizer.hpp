@@ -3,6 +3,7 @@
 
 #include <random>
 #include <algorithm>
+#include <iostream>
 #include <omp.h>
 
 namespace Kaadugal
