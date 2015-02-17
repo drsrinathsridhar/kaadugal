@@ -155,8 +155,10 @@ namespace Kaadugal
 	    S OptLeftNodeStats;
 	    S OptRightNodeStats;
 
-	    std::vector<VPFloat> ObjValAccum(m_Parameters.m_NumCandidateFeatures*m_Parameters.m_NumCandidateThresholds, 0.0);
-	    std::vector<OptParamsStruct> OptParamsStructAccum(m_Parameters.m_NumCandidateFeatures*m_Parameters.m_NumCandidateThresholds);
+	    std::vector<VPFloat> ObjValAccum(m_Parameters.m_NumCandidateFeatures, 0.0);
+	    std::vector<OptParamsStruct> OptParamsStructAccum(m_Parameters.m_NumCandidateFeatures);
+	    // std::vector<VPFloat> ObjValAccum(m_Parameters.m_NumCandidateFeatures*m_Parameters.m_NumCandidateThresholds, 0.0);
+	    // std::vector<OptParamsStruct> OptParamsStructAccum(m_Parameters.m_NumCandidateFeatures*m_Parameters.m_NumCandidateThresholds);
 	    omp_set_dynamic(0); // Explicitly disable dynamic teams
 	    omp_set_num_threads(std::min(m_Parameters.m_NumThreads, omp_get_max_threads()));
 	    // std::cout << "Set Threads: " << std::min(m_Parameters.m_NumThreads, omp_get_max_threads()) << std::endl;
@@ -167,8 +169,12 @@ namespace Kaadugal
 		// std::cout << "Using Threads: " << omp_get_num_threads() << std::endl;
 		T FeatureResponse; // This creates an empty feature response with random response
 		std::vector<VPFloat> Responses;
+		Responses.resize(DataSetSize);
 		for(int k = 0; k < DataSetSize; ++k)
-		    Responses.push_back(FeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k))); // TODO: Can be parallelized/made more efficient?
+		{
+		    Responses[k] = FeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k)); // TODO: Can be parallelized/made more efficient?
+		    // Responses.push_back(FeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k))); // TODO: Can be parallelized/made more efficient?
+		}
 
 		const std::vector<VPFloat>& Thresholds = SelectThresholds(Responses, PartitionedDataSetIdx->Size());
 		int NumThresholds = Thresholds.size();
@@ -176,6 +182,8 @@ namespace Kaadugal
 		//     std::cout << Thresholds[j] << "\t";
 		// std::cout << std::endl;
 		
+		VPFloat LocObjVal = 0.0;
+		OptParamsStruct LocObjValStruct;
 		for(int j = 0; j < NumThresholds; ++j)
 		{
 		    // First partition data based on current splitting candidates
@@ -195,11 +203,18 @@ namespace Kaadugal
 		    // Then compute some objective function value. Examples: information gain, Geni index
 		    VPFloat ObjVal = GetObjectiveValue(ParentNodeStats, LeftNodeStats, RightNodeStats);
 
-		    // OptParamsStructAccum.push_back(OptParamsStruct(Thresholds[j], Responses, FeatureResponse));
-		    // ObjValAccum.push_back(ObjVal);
-		    OptParamsStruct StructObj(Thresholds[j], FeatureResponse, true);
-		    OptParamsStructAccum[i*m_Parameters.m_NumCandidateThresholds + j] = StructObj;
-		    ObjValAccum[i*m_Parameters.m_NumCandidateThresholds + j] = ObjVal;
+		    // // OptParamsStructAccum.push_back(OptParamsStruct(Thresholds[j], Responses, FeatureResponse));
+		    // // ObjValAccum.push_back(ObjVal);
+		    // OptParamsStruct StructObj(Thresholds[j], FeatureResponse, true);
+		    // OptParamsStructAccum[i*m_Parameters.m_NumCandidateThresholds + j] = StructObj;
+		    // ObjValAccum[i*m_Parameters.m_NumCandidateThresholds + j] = ObjVal;
+
+		    // NEW EASIER CODE
+		    if(ObjVal >= LocObjVal)
+		    {
+			LocObjVal = ObjVal;
+			LocObjValStruct = OptParamsStruct(Thresholds[j], FeatureResponse, true);
+		    }
 
 		    // if(ObjVal >= OptObjVal)
 		    // {
@@ -212,6 +227,9 @@ namespace Kaadugal
 		    // 	OptRightNodeStats = RightNodeStats;
 		    // }
 		}
+
+		ObjValAccum[i] = LocObjVal;
+		OptParamsStructAccum[i] = LocObjValStruct;
 	    }
 
 	    int AccumSize = ObjValAccum.size();
