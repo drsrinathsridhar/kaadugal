@@ -40,6 +40,7 @@ namespace Kaadugal
 	int m_ReachedMaxDepth;
 	uint64_t m_TimeStartedBuild;
 	uint64_t m_TimeFinishedBuild;
+	std::vector<VPFloat> m_TreeLevelTimes; // Store time for training each tree level
 
 	// Structure needed for OpenMP accumulator variable
 	struct OptParamsStruct
@@ -68,7 +69,7 @@ namespace Kaadugal
 	    , m_isTreeTrained(false)
 	    , m_ReachedMaxDepth(0)
 	{
-
+	    m_TreeLevelTimes.resize(m_Parameters.m_MaxLevels, 0.0); // 0.0 time means that level was never reached
 	};
 
 	bool Build(std::shared_ptr<DataSetIndex> PartitionedDataSetIdx)
@@ -88,6 +89,16 @@ namespace Kaadugal
 
 	    m_TimeFinishedBuild = GetCurrentEpochTime();
 	    std::cout << ": Finished in " << (m_TimeFinishedBuild - m_TimeStartedBuild) * 1e-6 << " s." << std::endl;
+	    std::cout << "[ INFO ]: Times at each level (seconds) " << std::endl;
+
+	    VPFloat TotalTime = 0.0;
+	    for(unsigned int i = 0; i <= m_TreeLevelTimes.size(); ++i)
+	    {
+		VPFloat LevelTime = VPFloat(m_TreeLevelTimes[i]) * 1e-6;
+		TotalTime += LevelTime;
+		std::cout << LevelTime << " ";
+	    }
+	    std::cout << " (Total = " << TotalTime << " s)" << std::endl;
 
 	    m_isTreeTrained = Success;
 	    return m_isTreeTrained;
@@ -123,6 +134,10 @@ namespace Kaadugal
 		m_ReachedMaxDepth = CurrentNodeDepth;
 		std::cout << CurrentNodeDepth << " " << std::flush;
 	    }
+
+	    // Start time for node time computation
+	    uint64_t NodeStartTime = GetCurrentEpochTime();
+
 	    S ParentNodeStats(PartitionedDataSetIdx);
 	    int DataSetSize = PartitionedDataSetIdx->Size();
 	    // std::cout << ParentNodeStats.GetNumDataPoints() << std::endl;
@@ -136,6 +151,8 @@ namespace Kaadugal
 	    {
 		// std::cout << "[ INFO ]: Fewer than 2 data points in reached this node. Making leaf node..." << std::endl;
 	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
+		uint64_t NodeEndTime = GetCurrentEpochTime();
+		m_TreeLevelTimes[CurrentNodeDepth] += NodeEndTime - NodeStartTime;
 		return true;
 	    }
 
@@ -143,6 +160,8 @@ namespace Kaadugal
 	    {
 		// std::cout << "[ INFO ]: Terminating splitting at maximum tree depth." << std::endl;
 	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
+		uint64_t NodeEndTime = GetCurrentEpochTime();
+		m_TreeLevelTimes[CurrentNodeDepth] += NodeEndTime - NodeStartTime;
 	    	return true;
 	    }
 
@@ -289,6 +308,9 @@ namespace Kaadugal
 	    {
 		// std::cout << "[ INFO ]: No gain or very small gain (" << OptObjVal << ") for all splitting candidates. Making leaf node..." << std::endl;
 	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
+		uint64_t NodeEndTime = GetCurrentEpochTime();
+		m_TreeLevelTimes[CurrentNodeDepth] += NodeEndTime - NodeStartTime;
+		
 		return true;
 	    }
 
@@ -300,6 +322,9 @@ namespace Kaadugal
 	    // Since we store the decision tree as a full binary tree (in
 	    // breadth-first order) we can easily get the left and right children indices
 	    bool Success = true;
+	    uint64_t NodeEndTime = GetCurrentEpochTime();
+	    m_TreeLevelTimes[CurrentNodeDepth] += NodeEndTime - NodeStartTime;
+	    
 	    Success &= BuildTreeDepthFirst(OptLeftPartitionIdx, 2*NodeIndex+1, CurrentNodeDepth+1);
 	    Success &= BuildTreeDepthFirst(OptRightPartitionIdx, 2*NodeIndex+2, CurrentNodeDepth+1);
 	    	    
@@ -315,9 +340,12 @@ namespace Kaadugal
 	    std::cout << "[ INFO ]: At depth: " << std::flush;
 	    for(int i = 0; i < m_Tree->GetMaxDecisionLevels(); ++i)
 	    {
+		uint64_t NodeStartTime = GetCurrentEpochTime();
 		std::cout << i << " " << std::flush;
 		BuildTreeFrontier(DataSetIdx);
 		UpdateFrontierNodes();
+		uint64_t NodeEndTime = GetCurrentEpochTime();
+		m_TreeLevelTimes[i] += NodeEndTime - NodeStartTime;		
 	    }
 	    
 	    return true;
