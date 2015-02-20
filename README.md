@@ -22,6 +22,8 @@ in the Tamil language.
 Kaadugal is a header only library that can simply be included in your projects.
 The kaadugal/include path should be in your project include path.
 
+# Installation
+
 The examples directory contains a toy problem for training and testing simple
 classification and structured prediction problems. The steps to build the
 examples are:
@@ -45,6 +47,11 @@ Then test the forest on input data using
 ```bash
 ./classify test <INPUT_FOREST_PATH> ../examples/data/<DATA_FILE>
 ```
+
+# Utilities
+
+The util directory contains some utilities for manipulating learned forests/trees, compressing, etc.
+Follow similar steps as examples to build these utilities (replacing examples with util).
 
 # Contact
 

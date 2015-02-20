@@ -6,9 +6,10 @@ IF("${CMAKE_BUILD_TYPE}" STREQUAL "")
   SET(CMAKE_BUILD_TYPE Debug CACHE STRING "build type default to Debug, set to Release to improve performance" FORCE)
 ENDIF("${CMAKE_BUILD_TYPE}" STREQUAL "")
 
-# Project classify
-SET(PROJECT1 classify)
-PROJECT(${PROJECT1})
+
+# Project mergetrees for merging trees without knowing anything else
+SET(PROJECT3 mergetrees)
+PROJECT(${PROJECT3})
 # OpenMP
 FIND_PACKAGE(OpenMP)
 IF(OPENMP_FOUND)
@@ -36,14 +37,6 @@ ELSEIF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel") # Intel C++ compiler
   #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xAVX -ipo -prof-use -prof-dir=.")
 ENDIF()
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/../include)
-SET(CPP_FILES classify/classify.cpp)
-ADD_EXECUTABLE(${PROJECT1} ${CPP_FILES})
-TARGET_LINK_LIBRARIES(${PROJECT1})
-
-# Project structpredict
-SET(PROJECT2 structpredict)
-PROJECT(${PROJECT2})
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/../include)
-SET(CPP_FILES structpredict/structpredict.cpp)
-ADD_EXECUTABLE(${PROJECT2} ${CPP_FILES})
-TARGET_LINK_LIBRARIES(${PROJECT2})
+SET(CPP_FILES mergetrees/mergetrees.cpp)
+ADD_EXECUTABLE(${PROJECT3} ${CPP_FILES})
+TARGET_LINK_LIBRARIES(${PROJECT3})
