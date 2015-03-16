@@ -147,7 +147,7 @@ namespace Kaadugal
 
 	    // Check if incoming data is fewer than 3 data points. If so then just create a leaf node
 	    // It's 3 (instead of 2) because otherwise the SelectThresholds() could return 1 which is problematic
-	    if(DataSetSize < 3) // TODO: Make this an external parameter?
+	    if(DataSetSize < m_Parameters.m_MinDataSetSize)
 	    {
 		// std::cout << "[ INFO ]: Fewer than 2 data points in reached this node. Making leaf node..." << std::endl;
 	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
@@ -357,7 +357,7 @@ namespace Kaadugal
 
 	    // Check if incoming data is fewer than 3 data points at the root. If so then just create a leaf node
 	    // It's 3 (instead of 2) because otherwise the SelectThresholds() could return 1 which is problematic
-	    if(DataSetSize < 3) // TODO: Make this an external parameter?
+	    if(DataSetSize < m_Parameters.m_MinDataSetSize)
 	    {
 	    	m_Tree->GetNode(0).MakeLeafNode(S(DataSetIdx)); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 	    	return;
