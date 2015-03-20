@@ -146,7 +146,7 @@ namespace Kaadugal
 				m_NumThreads = std::max(1, std::atoi(Value.c_str()));
 				ConfigCtr++;
 			    }
-			    if(Key == "MinDataSetSize") // THIS IS A OPTIONAL PARAMETER, DEFAULT IS 3
+			    if(Key == "MinLeafSamples") // THIS IS A OPTIONAL PARAMETER, DEFAULT IS 3
 			    {
 				m_MinDataSetSize = std::atoi(Value.c_str());
 				ConfigCtr++;

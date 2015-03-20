@@ -150,7 +150,8 @@ namespace Kaadugal
 
 	    S ParentNodeStats(PartitionedDataSetIdx);
 	    int DataSetSize = PartitionedDataSetIdx->Size();
-	    std::cout << "Size: " << DataSetSize << std::endl;
+	    // std::cout << std::max(3, m_Parameters.m_MinDataSetSize) << std::endl;
+	    // std::cout << "Size: " << DataSetSize << std::endl;
 	    // std::cout << ParentNodeStats.GetNumDataPoints() << std::endl;
 	    // std::cout << ParentNodeStats.GetProbability(0) << std::endl;
 	    // std::cout << ParentNodeStats.FindWinnerLabelIndex() << std::endl;
@@ -158,7 +159,7 @@ namespace Kaadugal
 
 	    // Check if incoming data is fewer than 3 data points. If so then just create a leaf node
 	    // It's 3 (instead of 2) because otherwise the SelectThresholds() could return 1 which is problematic
-	    if(DataSetSize < m_Parameters.m_MinDataSetSize)
+	    if(DataSetSize < std::max(3, m_Parameters.m_MinDataSetSize))
 	    {
 		// std::cout << "[ INFO ]: Fewer than 2 data points in reached this node. Making leaf node..." << std::endl;
 	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
