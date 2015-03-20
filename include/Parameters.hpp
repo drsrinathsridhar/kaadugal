@@ -26,13 +26,15 @@ namespace Kaadugal
 	bool m_isValid;
 	VPFloat m_MinGain; // Minimum gain to tolerate
 	int m_NumThreads; // If OpenMP is used
+	int m_MinDataSetSize; // Defines when to stop learning and create leaf
 	
 	ForestBuilderParameters(const int& NumTrees, const int& MaxLevels
 				, const int& NumCandidateFeatures
 				, const int& NumCandidateThresholds
 				, const VPFloat& MinGain
 				, const TrainMethod& Type = TrainMethod::DFS
-				, const int&  NumThreads = 1)
+				, const int&  NumThreads = 1
+				, const int& MinDataSetSize = 3)
 	    : m_NumTrees(NumTrees)
 	    , m_MaxLevels(MaxLevels)
 	    , m_NumCandidateFeatures(NumCandidateFeatures)
@@ -40,6 +42,7 @@ namespace Kaadugal
 	    , m_TrainMethod(Type)
 	    , m_MinGain(MinGain)
 	    , m_NumThreads(NumThreads)
+	    , m_MinDataSetSize(MinDataSetSize)
 	{
 
 	};
@@ -58,6 +61,8 @@ namespace Kaadugal
 	    m_TrainMethod = RHS.m_TrainMethod;
 	    m_isValid = RHS.m_isValid;
 	    m_MinGain = RHS.m_MinGain;
+	    m_NumThreads = RHS.m_NumThreads;
+	    m_MinDataSetSize = RHS.m_MinDataSetSize;
 
 	    return *this;
         };
@@ -139,6 +144,11 @@ namespace Kaadugal
 			    if(Key == "NumThreads")
 			    {
 				m_NumThreads = std::max(1, std::atoi(Value.c_str()));
+				ConfigCtr++;
+			    }
+			    if(Key == "MinDataSetSize") // THIS IS A OPTIONAL PARAMETER, DEFAULT IS 3
+			    {
+				m_MinDataSetSize = std::atoi(Value.c_str());
 				ConfigCtr++;
 			    }
 
