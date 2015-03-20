@@ -64,12 +64,22 @@ namespace Kaadugal
 	};
 
     public:
+	int m_NumLeafNodes;
+	int m_NumSplitNodes;
+
 	DecisionTreeBuilder(const ForestBuilderParameters& Parameters)
 	    : m_Parameters(Parameters)
 	    , m_isTreeTrained(false)
 	    , m_ReachedMaxDepth(0)
+	    , m_NumLeafNodes(0)
+	    , m_NumSplitNodes(0)
 	{
 	    m_TreeLevelTimes.resize(m_Parameters.m_MaxLevels, 0.0); // 0.0 time means that level was never reached
+	};
+
+	~DecisionTreeBuilder(void)
+	{
+	    
 	};
 
 	bool Build(std::shared_ptr<DataSetIndex> PartitionedDataSetIdx)
@@ -140,6 +150,7 @@ namespace Kaadugal
 
 	    S ParentNodeStats(PartitionedDataSetIdx);
 	    int DataSetSize = PartitionedDataSetIdx->Size();
+	    std::cout << "Size: " << DataSetSize << std::endl;
 	    // std::cout << ParentNodeStats.GetNumDataPoints() << std::endl;
 	    // std::cout << ParentNodeStats.GetProbability(0) << std::endl;
 	    // std::cout << ParentNodeStats.FindWinnerLabelIndex() << std::endl;
@@ -153,6 +164,8 @@ namespace Kaadugal
 	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 		uint64_t NodeEndTime = GetCurrentEpochTime();
 		m_TreeLevelTimes[CurrentNodeDepth] += NodeEndTime - NodeStartTime;
+		m_NumLeafNodes++;
+
 		return true;
 	    }
 
@@ -162,6 +175,8 @@ namespace Kaadugal
 	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 		uint64_t NodeEndTime = GetCurrentEpochTime();
 		m_TreeLevelTimes[CurrentNodeDepth] += NodeEndTime - NodeStartTime;
+		m_NumLeafNodes++;
+
 	    	return true;
 	    }
 
@@ -185,6 +200,7 @@ namespace Kaadugal
 #pragma omp parallel for
 	    for(int i = 0; i < m_Parameters.m_NumCandidateFeatures; ++i)
 	    {
+		// uint64_t GreedyStartTime = GetCurrentEpochTime();
 		// std::cout << "Using Threads: " << omp_get_num_threads() << std::endl;
 		T FeatureResponse; // This creates an empty feature response with random response
 		std::vector<VPFloat> Responses;
@@ -194,9 +210,16 @@ namespace Kaadugal
 		    Responses[k] = FeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k)); // TODO: Can be parallelized/made more efficient?
 		    // Responses.push_back(FeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k))); // TODO: Can be parallelized/made more efficient?
 		}
+		// uint64_t MidGreedyEndTime = GetCurrentEpochTime();
+		// std::cout << (MidGreedyEndTime - GreedyStartTime) * 1e-3 << " ms." << std::endl;
 
 		const std::vector<VPFloat>& Thresholds = SelectThresholds(Responses, PartitionedDataSetIdx->Size());
 		int NumThresholds = Thresholds.size();
+		// if(NumThresholds == 0)
+		// {
+		//     std::cout << "Beep!\n";
+		//     exit(0);
+		// }
 		// for(int j = 0; j < NumThresholds; ++j)
 		//     std::cout << Thresholds[j] << "\t";
 		// std::cout << std::endl;
@@ -245,6 +268,9 @@ namespace Kaadugal
 		    // 	OptLeftNodeStats = LeftNodeStats; // TODO: Overload = operator
 		    // 	OptRightNodeStats = RightNodeStats;
 		    // }
+
+		    // uint64_t GreedyEndTime = GetCurrentEpochTime();
+		    // std::cout << (GreedyEndTime - GreedyStartTime) * 1e-3 << " ms." << std::endl;
 		}
 
 		ObjValAccum[i] = LocObjVal;
@@ -310,12 +336,14 @@ namespace Kaadugal
 	    	m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 		uint64_t NodeEndTime = GetCurrentEpochTime();
 		m_TreeLevelTimes[CurrentNodeDepth] += NodeEndTime - NodeStartTime;
-		
+		m_NumLeafNodes++;
+
 		return true;
 	    }
 
 	    // Now free to make a split node
 	    m_Tree->GetNode(NodeIndex).MakeSplitNode(ParentNodeStats, OptFeatureResponse, OptThreshold);
+	    m_NumSplitNodes++;
 	    // std::cout << "[ INFO ]: Creating split node..." << std::endl;
 
 	    // Now recurse :)
