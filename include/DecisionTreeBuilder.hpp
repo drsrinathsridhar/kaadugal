@@ -145,8 +145,6 @@ namespace Kaadugal
 
 	    S ParentNodeStats(PartitionedDataSetIdx);
 	    int DataSetSize = PartitionedDataSetIdx->Size();
-	    // std::cout << std::max(3, m_Parameters.m_MinDataSetSize) << std::endl;
-	    // std::cout << "Size: " << DataSetSize << std::endl;
 	    // std::cout << ParentNodeStats.GetNumDataPoints() << std::endl;
 	    // std::cout << ParentNodeStats.GetProbability(0) << std::endl;
 	    // std::cout << ParentNodeStats.FindWinnerLabelIndex() << std::endl;
@@ -196,7 +194,6 @@ namespace Kaadugal
 #pragma omp parallel for
 	    for(int i = 0; i < m_Parameters.m_NumCandidateFeatures; ++i)
 	    {
-		// uint64_t GreedyStartTime = GetCurrentEpochTime();
 		// std::cout << "Using Threads: " << omp_get_num_threads() << std::endl;
 		T FeatureResponse; // This creates an empty feature response with random response
 		std::vector<VPFloat> Responses;
@@ -206,8 +203,6 @@ namespace Kaadugal
 		    Responses[k] = FeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k)); // TODO: Can be parallelized/made more efficient?
 		    // Responses.push_back(FeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k))); // TODO: Can be parallelized/made more efficient?
 		}
-		// uint64_t MidGreedyEndTime = GetCurrentEpochTime();
-		// std::cout << (MidGreedyEndTime - GreedyStartTime) * 1e-3 << " ms." << std::endl;
 
 		const std::vector<VPFloat>& Thresholds = SelectThresholds(Responses, PartitionedDataSetIdx->Size());
 		int NumThresholds = Thresholds.size();
@@ -259,9 +254,6 @@ namespace Kaadugal
 		    // 	OptLeftNodeStats = LeftNodeStats; // TODO: Overload = operator
 		    // 	OptRightNodeStats = RightNodeStats;
 		    // }
-
-		    // uint64_t GreedyEndTime = GetCurrentEpochTime();
-		    // std::cout << (GreedyEndTime - GreedyStartTime) * 1e-3 << " ms." << std::endl;
 		}
 
 		ObjValAccum[i] = LocObjVal;
