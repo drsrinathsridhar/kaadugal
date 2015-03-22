@@ -77,11 +77,6 @@ namespace Kaadugal
 	    m_TreeLevelTimes.resize(m_Parameters.m_MaxLevels, 0.0); // 0.0 time means that level was never reached
 	};
 
-	~DecisionTreeBuilder(void)
-	{
-	    
-	};
-
 	bool Build(std::shared_ptr<DataSetIndex> PartitionedDataSetIdx)
 	{
 	    m_Tree = std::shared_ptr<DecisionTree<T, S, R>>(new DecisionTree<T, S, R>(m_Parameters.m_MaxLevels));
@@ -216,11 +211,6 @@ namespace Kaadugal
 
 		const std::vector<VPFloat>& Thresholds = SelectThresholds(Responses, PartitionedDataSetIdx->Size());
 		int NumThresholds = Thresholds.size();
-		// if(NumThresholds == 0)
-		// {
-		//     std::cout << "Beep!\n";
-		//     exit(0);
-		// }
 		// for(int j = 0; j < NumThresholds; ++j)
 		//     std::cout << Thresholds[j] << "\t";
 		// std::cout << std::endl;
@@ -386,7 +376,7 @@ namespace Kaadugal
 
 	    // Check if incoming data is fewer than 3 data points at the root. If so then just create a leaf node
 	    // It's 3 (instead of 2) because otherwise the SelectThresholds() could return 1 which is problematic
-	    if(DataSetSize < m_Parameters.m_MinDataSetSize)
+	    if(DataSetSize < std::max(3, m_Parameters.m_MinDataSetSize))
 	    {
 	    	m_Tree->GetNode(0).MakeLeafNode(S(DataSetIdx)); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 	    	return;
