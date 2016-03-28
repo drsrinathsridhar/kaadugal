@@ -4,11 +4,11 @@ clear all
 close all
 
 %-------- PARAMS ------------------
-NumPoints = 2000;
-Type = 'Train'; % 'Train/Test'
+% NumPoints = 2000;
+% Type = 'Train'; % 'Train/Test'
 
-% NumPoints = 200;
-% Type = 'Test'; % 'Train/Test'
+NumPoints = 200;
+Type = 'Test'; % 'Train/Test'
 
 xLimits = [1 NumPoints];
 yLimits = [1 NumPoints];
