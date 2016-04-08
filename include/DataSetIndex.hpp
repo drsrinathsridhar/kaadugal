@@ -2,6 +2,7 @@
 #define _DATASETINDEX_HPP_
 
 #include <memory>
+#include <vector>
 
 #include "Abstract/AbstractDataSet.hpp"
 
@@ -36,6 +37,7 @@ namespace Kaadugal
 
 		std::shared_ptr<AbstractDataPoint> GetDataPoint(int i) { return m_BaseDataSet->Get(GetDataPointIndex(i)); };
 		std::shared_ptr<AbstractDataSet> GetDataSet(void) { return m_BaseDataSet; };
+		const std::vector<int>& GetIndex(void) { return m_Index; };
 	};
 
 } // namespace Kaadugal

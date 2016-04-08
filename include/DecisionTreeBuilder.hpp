@@ -13,7 +13,6 @@
 #include "Randomizer.hpp"
 #include "Utilities.hpp"
 
-// TODO: Convert int to vector::type to avoid int overflow problems
 // TODO: Avoid using push_back()?
 namespace Kaadugal
 {
@@ -147,8 +146,6 @@ namespace Kaadugal
 			int DataSetSize = PartitionedDataSetIdx->Size();
 			// std::cout << ParentNodeStats.GetNumDataPoints() << std::endl;
 			// std::cout << ParentNodeStats.GetProbability(0) << std::endl;
-			// std::cout << ParentNodeStats.FindWinnerLabelIndex() << std::endl;
-			// return true;
 
 			// Check if incoming data is fewer than 3 data points. If so then just create a leaf node
 			// It's 3 (instead of 2) because otherwise the SelectThresholds() could return 1 which is problematic
@@ -156,6 +153,7 @@ namespace Kaadugal
 			{
 				// std::cout << "[ INFO ]: Fewer than 2 data points in reached this node. Making leaf node..." << std::endl;
 				m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
+				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
 				uint64_t NodeEndTime = GetCurrentEpochTime();
 				m_TreeLevelTimes[CurrentNodeDepth] += NodeEndTime - NodeStartTime;
 				m_NumLeafNodes++;
@@ -167,6 +165,7 @@ namespace Kaadugal
 			{
 				// std::cout << "[ INFO ]: Terminating splitting at maximum tree depth." << std::endl;
 				m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
+				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
 				uint64_t NodeEndTime = GetCurrentEpochTime();
 				m_TreeLevelTimes[CurrentNodeDepth] += NodeEndTime - NodeStartTime;
 				m_NumLeafNodes++;
@@ -185,30 +184,19 @@ namespace Kaadugal
 
 			std::vector<VPFloat> ObjValAccum(m_Parameters.m_NumCandidateFeatures, 0.0);
 			std::vector<OptParamsStruct> OptParamsStructAccum(m_Parameters.m_NumCandidateFeatures);
-			// std::vector<VPFloat> ObjValAccum(m_Parameters.m_NumCandidateFeatures*m_Parameters.m_NumCandidateThresholds, 0.0);
-			// std::vector<OptParamsStruct> OptParamsStructAccum(m_Parameters.m_NumCandidateFeatures*m_Parameters.m_NumCandidateThresholds);
 			omp_set_dynamic(0); // Explicitly disable dynamic teams
 			omp_set_num_threads(std::min(m_Parameters.m_NumThreads, omp_get_max_threads()));
-			// std::cout << "Set Threads: " << std::min(m_Parameters.m_NumThreads, omp_get_max_threads()) << std::endl;
-
 #pragma omp parallel for
 			for (int i = 0; i < m_Parameters.m_NumCandidateFeatures; ++i)
 			{
-				// std::cout << "Using Threads: " << omp_get_num_threads() << std::endl;
 				T FeatureResponse; // This creates an empty feature response with random response
 				std::vector<VPFloat> Responses;
 				Responses.resize(DataSetSize);
 				for (int k = 0; k < DataSetSize; ++k)
-				{
 					Responses[k] = FeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k)); // TODO: Can be parallelized/made more efficient?
-					// Responses.push_back(FeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k))); // TODO: Can be parallelized/made more efficient?
-				}
 
 				const std::vector<VPFloat>& Thresholds = SelectThresholds(Responses, PartitionedDataSetIdx->Size());
 				int NumThresholds = Thresholds.size();
-				// for(int j = 0; j < NumThresholds; ++j)
-				//     std::cout << Thresholds[j] << "\t";
-				// std::cout << std::endl;
 
 				VPFloat LocObjVal = 0.0;
 				OptParamsStruct LocObjValStruct;
@@ -216,14 +204,6 @@ namespace Kaadugal
 				{
 					// First partition data based on current splitting candidates
 					std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets = Partition(PartitionedDataSetIdx, Responses, Thresholds[j]);
-					// if(Subsets.first->Size() == 0 || Subsets.second->Size() == 0)
-					// {
-					// 	std::cout << "Parent size: " << PartitionedDataSetIdx->Size() << std::endl;
-					// 	std::cout << "Left size: " << Subsets.first->Size() << std::endl;
-					// 	std::cout << "Right size: " << Subsets.second->Size() << std::endl;
-					// 	std::cout << "Problem: " << j << ", " << i << "\n";
-					// 	return false;
-					// }
 
 					S LeftNodeStats(Subsets.first);
 					S RightNodeStats(Subsets.second);
@@ -231,29 +211,11 @@ namespace Kaadugal
 					// Then compute some objective function value. Examples: information gain, Geni index
 					VPFloat ObjVal = GetObjectiveValue(ParentNodeStats, LeftNodeStats, RightNodeStats);
 
-					// // OptParamsStructAccum.push_back(OptParamsStruct(Thresholds[j], Responses, FeatureResponse));
-					// // ObjValAccum.push_back(ObjVal);
-					// OptParamsStruct StructObj(Thresholds[j], FeatureResponse, true);
-					// OptParamsStructAccum[i*m_Parameters.m_NumCandidateThresholds + j] = StructObj;
-					// ObjValAccum[i*m_Parameters.m_NumCandidateThresholds + j] = ObjVal;
-
-					// NEW EASIER CODE
 					if (ObjVal >= LocObjVal)
 					{
 						LocObjVal = ObjVal;
 						LocObjValStruct = OptParamsStruct(Thresholds[j], FeatureResponse, true);
 					}
-
-					// if(ObjVal >= OptObjVal)
-					// {
-					// 	OptObjVal = ObjVal;
-					// 	OptFeatureResponse = FeatureResponse;
-					// 	OptThreshold = Thresholds[j];
-					// 	OptLeftPartitionIdx = Subsets.first;
-					// 	OptRightPartitionIdx = Subsets.second;
-					// 	OptLeftNodeStats = LeftNodeStats; // TODO: Overload = operator
-					// 	OptRightNodeStats = RightNodeStats;
-					// }
 				}
 
 				ObjValAccum[i] = LocObjVal;
@@ -288,7 +250,6 @@ namespace Kaadugal
 			OptLeftNodeStats = LeftNodeStats;
 			OptRightNodeStats = RightNodeStats;
 
-
 			// std::cout << "\n--------------------------------\n" << "Depth Level: " << CurrentNodeDepth << "\n--------------------------------\n";
 			// {
 			// 	std::cout << "Parent size: " << PartitionedDataSetIdx->Size() << std::endl;
@@ -317,6 +278,7 @@ namespace Kaadugal
 			{
 				// std::cout << "[ INFO ]: No gain or very small gain (" << OptObjVal << ") for all splitting candidates. Making leaf node..." << std::endl;
 				m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
+				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
 				uint64_t NodeEndTime = GetCurrentEpochTime();
 				m_TreeLevelTimes[CurrentNodeDepth] += NodeEndTime - NodeStartTime;
 				m_NumLeafNodes++;
@@ -601,12 +563,13 @@ namespace Kaadugal
 
 		VPFloat GetObjectiveValue(S& ParentStats, S& LeftStats, S& RightStats)
 		{
-			// Statistics are already aggregated
-			// TODO: What if they are not aggregated?
-
-			if (ParentStats.GetNumDataPoints() <= 0)
+			// If there are fewer than requested datapoints in the split, we assign low information gain (but not lower than the minimum gain)
+			if (ParentStats.GetNumDataPoints() < m_Parameters.m_MinDataSetSize 
+				|| LeftStats.GetNumDataPoints() < m_Parameters.m_MinDataSetSize
+				|| RightStats.GetNumDataPoints() < m_Parameters.m_MinDataSetSize)
 				return 0.0;
 
+			// Assuming statistics are already aggregated
 			// NOTE: We are using information gain as the objective function
 			// Change this and use a template/abstract class, if needed
 			// See any of the Shotton et al. papers for this definition

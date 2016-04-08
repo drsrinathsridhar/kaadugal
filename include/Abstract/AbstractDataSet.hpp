@@ -32,6 +32,10 @@ namespace Kaadugal
 
 			return m_DataPoints[i];
 		};
+		virtual void Special(int NodeIndex = 0, const std::vector<int>& Index = std::vector<int>())
+		{
+			std::cout << "[ WARN ]: AbstractDataPoint::doSpecial() - Not implemented." << std::endl; 
+		};
 	};
 } // namespace Kaadugal
 
