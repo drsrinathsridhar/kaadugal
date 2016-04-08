@@ -11,50 +11,50 @@
 
 namespace Kaadugal
 {
-    // T: AbstractFeatureResponse which is the feature response function or weak learner
-    // S: AbstractStatistics which contains some statistics about node from training
-    // R: AbstractLeafData, arbitrary data stored if this is a leaf node
-    template<class T, class S, class R>
-    class DecisionForest
-    {
-    private:
-	int m_nTrees;
-	std::vector<std::shared_ptr<DecisionTree<T, S, R>>> m_Trees;
-
-    public:
-	void AddTree(std::shared_ptr<DecisionTree<T, S, R>> TreePtr)
+	// T: AbstractFeatureResponse which is the feature response function or weak learner
+	// S: AbstractStatistics which contains some statistics about node from training
+	// R: AbstractLeafData, arbitrary data stored if this is a leaf node
+	template<class T, class S, class R>
+	class DecisionForest
 	{
-	    m_Trees.push_back(TreePtr);
-	    m_nTrees = m_Trees.size();
-	};
+	private:
+		int m_nTrees;
+		std::vector<std::shared_ptr<DecisionTree<T, S, R>>> m_Trees;
 
-	int GetNumTrees(void) { return m_nTrees; };
+	public:
+		void AddTree(std::shared_ptr<DecisionTree<T, S, R>> TreePtr)
+		{
+			m_Trees.push_back(TreePtr);
+			m_nTrees = m_Trees.size();
+		};
 
-	void Test(std::shared_ptr<AbstractDataPoint> DataPointPtr, std::shared_ptr<S> ForestLeafStats)
-	{
-	    // TODO: Handle arbitrary leaf data
-	    for(int i = 0; i < m_nTrees; ++i)
-		ForestLeafStats->Merge(m_Trees[i]->Test(DataPointPtr));
-	};
+		int GetNumTrees(void) { return m_nTrees; };
 
-	void Serialize(std::ostream& OutputStream)
-	{
-	    OutputStream.write((const char *)(&m_nTrees), sizeof(int));
-	    for(int i = 0; i < m_nTrees; ++i)
-		m_Trees[i]->Serialize(OutputStream);
+		void Test(std::shared_ptr<AbstractDataPoint> DataPointPtr, std::shared_ptr<S> ForestLeafStats)
+		{
+			// TODO: Handle arbitrary leaf data
+			for (int i = 0; i < m_nTrees; ++i)
+				ForestLeafStats->Merge(m_Trees[i]->Test(DataPointPtr));
+		};
+
+		void Serialize(std::ostream& OutputStream) const
+		{
+			OutputStream.write((const char *)(&m_nTrees), sizeof(int));
+			for (int i = 0; i < m_nTrees; ++i)
+				m_Trees[i]->Serialize(OutputStream);
+		};
+		void Deserialize(std::istream& InputStream)
+		{
+			int nTrees = 0;
+			InputStream.read((char *)(&nTrees), sizeof(int));
+			for (int i = 0; i < nTrees; ++i)
+			{
+				auto Tree = std::shared_ptr<DecisionTree<T, S, R>>(new DecisionTree<T, S, R>(0)); // Create empty tree
+				Tree->Deserialize(InputStream);
+				AddTree(Tree);
+			}
+		};
 	};
-	void Deserialize(std::istream& InputStream)
-	{
-	    int nTrees = 0;
-	    InputStream.read((char *)(&nTrees), sizeof(int));
-	    for(int i = 0; i < nTrees; ++i)
-	    {
-		auto Tree = std::shared_ptr<DecisionTree<T, S, R>>(new DecisionTree<T, S, R>(0)); // Create empty tree
-		Tree->Deserialize(InputStream);
-		AddTree(Tree);
-	    }
-	};
-    };
 } // namespace Kaadugal
 
 #endif // _DECISIONFOREST_HPP_
