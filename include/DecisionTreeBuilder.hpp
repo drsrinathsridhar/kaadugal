@@ -151,7 +151,7 @@ namespace Kaadugal
 			// It's 3 (instead of 2) because otherwise the SelectThresholds() could return 1 which is problematic
 			if (DataSetSize < std::max(3, m_Parameters.m_MinDataSetSize))
 			{
-				// std::cout << "[ INFO ]: Fewer than 2 data points in reached this node. Making leaf node..." << std::endl;
+				std::cout << "[ INFO ]: Fewer than 2 data points in reached this node. Making leaf node..." << std::endl;
 				m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
 				uint64_t NodeEndTime = GetCurrentEpochTime();
@@ -174,7 +174,7 @@ namespace Kaadugal
 			}
 
 			// Initialize optimal values
-			VPFloat OptObjVal = 0.0;
+			VPFloat OptObjVal = -1.0; // Negative values are not possible since this is an energy
 			T OptFeatureResponse; // This creates an empty feature response with random response
 			VPFloat OptThreshold = 0.0;
 			std::shared_ptr<DataSetIndex> OptLeftPartitionIdx;
@@ -182,7 +182,7 @@ namespace Kaadugal
 			S OptLeftNodeStats;
 			S OptRightNodeStats;
 
-			std::vector<VPFloat> ObjValAccum(m_Parameters.m_NumCandidateFeatures, 0.0);
+			std::vector<VPFloat> ObjValAccum(m_Parameters.m_NumCandidateFeatures, -1.0);
 			std::vector<OptParamsStruct> OptParamsStructAccum(m_Parameters.m_NumCandidateFeatures);
 			omp_set_dynamic(0); // Explicitly disable dynamic teams
 			omp_set_num_threads(std::min(m_Parameters.m_NumThreads, omp_get_max_threads()));
@@ -198,7 +198,7 @@ namespace Kaadugal
 				const std::vector<VPFloat>& Thresholds = SelectThresholds(Responses, PartitionedDataSetIdx->Size());
 				int NumThresholds = Thresholds.size();
 
-				VPFloat LocObjVal = 0.0;
+				VPFloat LocObjVal = -1.0;
 				OptParamsStruct LocObjValStruct;
 				for (int j = 0; j < NumThresholds; ++j)
 				{
@@ -211,7 +211,7 @@ namespace Kaadugal
 					// Then compute some objective function value. Examples: information gain, Geni index
 					VPFloat ObjVal = GetObjectiveValue(ParentNodeStats, LeftNodeStats, RightNodeStats);
 
-					if (ObjVal >= LocObjVal)
+					if (ObjVal > LocObjVal)
 					{
 						LocObjVal = ObjVal;
 						LocObjValStruct = OptParamsStruct(Thresholds[j], FeatureResponse, true);
@@ -228,12 +228,18 @@ namespace Kaadugal
 				if (OptParamsStructAccum[ii].s_isValid == false)
 					continue;
 
-				if (ObjValAccum[ii] >= OptObjVal)
+				if (ObjValAccum[ii] > OptObjVal)
 				{
 					OptObjVal = ObjValAccum[ii];
 					OptFeatureResponse = OptParamsStructAccum[ii].s_FeatureResponse;
 					OptThreshold = OptParamsStructAccum[ii].s_Threshold;
 				}
+			}
+
+			if (OptObjVal < 0.0)
+			{
+				std::cout << "RUNTIME ERROR in BuildTreeDepthFirst()" << std::endl; // For windows
+				throw std::runtime_error("Optimum objective value is negative. Cannot proceed.");
 			}
 
 			std::vector<VPFloat> DataResponses(DataSetSize);
@@ -276,7 +282,7 @@ namespace Kaadugal
 			// No gain or very small gain
 			if (OptObjVal == 0.0 || OptObjVal < m_Parameters.m_MinGain)
 			{
-				// std::cout << "[ INFO ]: No gain or very small gain (" << OptObjVal << ") for all splitting candidates. Making leaf node..." << std::endl;
+				std::cout << "[ INFO ]: No gain or very small gain (" << OptObjVal << ") for all splitting candidates. Making leaf node..." << std::endl;
 				m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
 				uint64_t NodeEndTime = GetCurrentEpochTime();
@@ -563,11 +569,16 @@ namespace Kaadugal
 
 		VPFloat GetObjectiveValue(S& ParentStats, S& LeftStats, S& RightStats)
 		{
-			// If there are fewer than requested datapoints in the split, we assign low information gain (but not lower than the minimum gain)
-			if (ParentStats.GetNumDataPoints() < m_Parameters.m_MinDataSetSize 
-				|| LeftStats.GetNumDataPoints() < m_Parameters.m_MinDataSetSize
+			if (ParentStats.GetNumDataPoints() < m_Parameters.m_MinDataSetSize)
+			{
+				std::cout << "RUNTIME ERROR in GetObjectiveValue()" << std::endl; // For windows
+				throw std::runtime_error("ParentStats should never contain so little data points. Cannot proceed with training.");
+			}
+
+			// If there are fewer than requested datapoints in this split, we assign a value that shows that we do not prefer this split
+			if (LeftStats.GetNumDataPoints() < m_Parameters.m_MinDataSetSize
 				|| RightStats.GetNumDataPoints() < m_Parameters.m_MinDataSetSize)
-				return 0.0;
+				return -1.0;
 
 			// Assuming statistics are already aggregated
 			// NOTE: We are using information gain as the objective function
@@ -577,7 +588,7 @@ namespace Kaadugal
 				- (VPFloat(LeftStats.GetNumDataPoints())  * LeftStats.GetEntropy()
 				+ VPFloat(RightStats.GetNumDataPoints()) * RightStats.GetEntropy()) / VPFloat(ParentStats.GetNumDataPoints());
 
-			// std::cout << "InfoGain: " << InformationGain << std::endl;
+			//std::cout << "InfoGain: " << InformationGain << std::endl;
 
 			return InformationGain;
 		};
