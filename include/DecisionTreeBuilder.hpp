@@ -282,7 +282,7 @@ namespace Kaadugal
 			// No gain or very small gain
 			if (OptObjVal == 0.0 || OptObjVal < m_Parameters.m_MinGain)
 			{
-				std::cout << "[ INFO ]: No gain or very small gain (" << OptObjVal << ") for all splitting candidates. Making leaf node..." << std::endl;
+			    //std::cout << "[ INFO ]: No gain or very small gain (" << OptObjVal << ") for all splitting candidates. Making leaf node..." << std::endl;
 				m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
 				uint64_t NodeEndTime = GetCurrentEpochTime();
