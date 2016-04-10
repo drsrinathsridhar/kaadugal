@@ -578,7 +578,7 @@ namespace Kaadugal
 			// If there are fewer than requested datapoints in this split, we assign a value that shows that we do not prefer this split
 			if (LeftStats.GetNumDataPoints() < m_Parameters.m_MinDataSetSize
 				|| RightStats.GetNumDataPoints() < m_Parameters.m_MinDataSetSize)
-				return -1.0;
+				return 0.0;
 
 			// Assuming statistics are already aggregated
 			// NOTE: We are using information gain as the objective function
