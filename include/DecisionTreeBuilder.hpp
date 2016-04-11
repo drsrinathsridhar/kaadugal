@@ -151,7 +151,7 @@ namespace Kaadugal
 			// It's 3 (instead of 2) because otherwise the SelectThresholds() could return 1 which is problematic
 			if (DataSetSize < std::max(3, m_Parameters.m_MinDataSetSize))
 			{
-				std::cout << "[ INFO ]: Fewer than 2 data points in reached this node. Making leaf node..." << std::endl;
+				//std::cout << "[ INFO ]: Fewer than 2 data points in reached this node. Making leaf node..." << std::endl;
 				m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
 				uint64_t NodeEndTime = GetCurrentEpochTime();
@@ -163,7 +163,7 @@ namespace Kaadugal
 
 			if (CurrentNodeDepth >= m_Tree->GetMaxDecisionLevels()) // Both are zero-indexed
 			{
-				// std::cout << "[ INFO ]: Terminating splitting at maximum tree depth." << std::endl;
+				//std::cout << "[ INFO ]: Terminating splitting at maximum tree depth." << std::endl;
 				m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
 				uint64_t NodeEndTime = GetCurrentEpochTime();
@@ -238,7 +238,7 @@ namespace Kaadugal
 
 			if (OptObjVal < 0.0)
 			{
-				std::cout << "RUNTIME ERROR in BuildTreeDepthFirst()" << std::endl; // For windows
+				//std::cout << "RUNTIME ERROR in BuildTreeDepthFirst()" << std::endl; // For windows
 				throw std::runtime_error("Optimum objective value is negative. Cannot proceed.");
 			}
 
@@ -576,8 +576,8 @@ namespace Kaadugal
 			}
 
 			// If there are fewer than requested datapoints in this split, we assign a value that shows that we do not prefer this split
-			if (LeftStats.GetNumDataPoints() < m_Parameters.m_MinDataSetSize
-				|| RightStats.GetNumDataPoints() < m_Parameters.m_MinDataSetSize)
+			if (LeftStats.GetNumDataPoints() <  std::max(3, m_Parameters.m_MinDataSetSize)
+				|| RightStats.GetNumDataPoints() <  std::max(3, m_Parameters.m_MinDataSetSize))
 				return 0.0;
 
 			// Assuming statistics are already aggregated

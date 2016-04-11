@@ -99,6 +99,7 @@ namespace Kaadugal
 		{
 			if (m_Nodes[NodeIndex].GetType() == Kaadugal::NodeType::LeafNode) // Termination condition
 			{
+				//std::cout << "Terminating NodeIndex: " << NodeIndex << std::endl;
 				TreeLeafStats = m_Nodes[NodeIndex].GetStatistics();
 				return;
 			}
