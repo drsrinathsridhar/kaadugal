@@ -1,5 +1,4 @@
-#ifndef _DECISIONTREE_HPP_
-#define _DECISIONTREE_HPP_
+#pragma once
 
 #include <vector>
 #include <stdexcept>
@@ -140,5 +139,3 @@ namespace Kaadugal
 		};
 	};
 } // namespace Kaadugal
-
-#endif // _DECISIONTREE_HPP_

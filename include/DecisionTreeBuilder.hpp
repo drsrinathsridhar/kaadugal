@@ -1,5 +1,4 @@
-#ifndef _DECISIONTREEBUILDER_HPP_
-#define _DECISIONTREEBUILDER_HPP_
+#pragma once
 
 #include <memory>
 #include <map>
@@ -282,12 +281,9 @@ namespace Kaadugal
 			// No gain or very small gain
 			if (OptObjVal == 0.0 || OptObjVal < m_Parameters.m_MinGain)
 			{
-			    //std::cout << "[ INFO ]: No gain or very small gain (" << OptObjVal << ") for all splitting candidates. Making leaf node..." << std::endl;
-				m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
+				//std::cout << "[ INFO ]: No gain or very small gain (" << OptObjVal << ") for all splitting candidates. Making leaf node..." << std::endl;
 				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
-				uint64_t NodeEndTime = GetCurrentEpochTime();
-				m_TreeLevelTimes[CurrentNodeDepth] += NodeEndTime - NodeStartTime;
-				m_NumLeafNodes++;
+				MakeLeafNode(ParentNodeStats, NodeIndex, CurrentNodeDepth, PartitionedDataSetIdx);
 
 				return true;
 			}
@@ -308,6 +304,16 @@ namespace Kaadugal
 			Success &= BuildTreeDepthFirst(OptRightPartitionIdx, 2 * NodeIndex + 2, CurrentNodeDepth + 1);
 
 			return Success;
+		};
+
+		void MakeLeafNode(S& NodeStats, int NodeIndex, int CurrentNodeDepth, std::shared_ptr<DataSetIndex> LeafDataSetIdx)
+		{
+			R LeafData;
+			LeafData.Construct(LeafDataSetIdx);
+			m_Tree->GetNode(NodeIndex).MakeLeafNode(NodeStats, LeafData); // Leaf node can be "endowed" with arbitrary data
+			uint64_t NodeEndTime = GetCurrentEpochTime();
+			m_TreeLevelTimes[CurrentNodeDepth] += NodeEndTime - NodeStartTime;
+			m_NumLeafNodes++;
 		};
 
 		bool BuildTreeBreadthFirst(std::shared_ptr<DataSetIndex> DataSetIdx)
@@ -576,8 +582,8 @@ namespace Kaadugal
 			}
 
 			// If there are fewer than requested datapoints in this split, we assign a value that shows that we do not prefer this split
-			if (LeftStats.GetNumDataPoints() <  std::max(3, m_Parameters.m_MinDataSetSize)
-				|| RightStats.GetNumDataPoints() <  std::max(3, m_Parameters.m_MinDataSetSize))
+			if (LeftStats.GetNumDataPoints() < std::max(3, m_Parameters.m_MinDataSetSize)
+				|| RightStats.GetNumDataPoints() < std::max(3, m_Parameters.m_MinDataSetSize))
 				return 0.0;
 
 			// Assuming statistics are already aggregated
@@ -604,6 +610,3 @@ namespace Kaadugal
 		bool DoneBuild(void) { return m_isTreeTrained; };
 	};
 } // namespace Kaadugal
-
-#endif // _DECISIONTREEBUILDER_HPP_
-
