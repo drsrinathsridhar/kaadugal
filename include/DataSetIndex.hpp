@@ -1,8 +1,8 @@
-#ifndef _DATASETINDEX_HPP_
-#define _DATASETINDEX_HPP_
+#pragma once
 
 #include <memory>
 #include <vector>
+#include <iostream>
 
 #include "Abstract/AbstractDataSet.hpp"
 
@@ -40,5 +40,3 @@ namespace Kaadugal
 		const std::vector<int>& GetIndex(void) { return m_Index; };
 	};
 } // namespace Kaadugal
-
-#endif // _DATASETINDEX_HPP_

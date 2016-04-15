@@ -152,7 +152,7 @@ namespace Kaadugal
 			{
 				//std::cout << "[ INFO ]: Fewer than 2 data points in reached this node. Making leaf node..." << std::endl;
 				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
-				MakeLeafNode(ParentNodeStats, NodeIndex, NodeStartTime, CurrentNodeDepth, PartitionedDataSetIdx);
+				MakeLeafNode(ParentNodeStats, NodeIndex, CurrentNodeDepth, NodeStartTime, PartitionedDataSetIdx);
 
 				return true;
 			}
@@ -161,7 +161,7 @@ namespace Kaadugal
 			{
 				//std::cout << "[ INFO ]: Terminating splitting at maximum tree depth." << std::endl;
 				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
-				MakeLeafNode(ParentNodeStats, NodeIndex, NodeStartTime, CurrentNodeDepth, PartitionedDataSetIdx);
+				MakeLeafNode(ParentNodeStats, NodeIndex, CurrentNodeDepth, NodeStartTime, PartitionedDataSetIdx);
 
 				return true;
 			}

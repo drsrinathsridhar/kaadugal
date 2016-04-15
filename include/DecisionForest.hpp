@@ -30,11 +30,21 @@ namespace Kaadugal
 
 		int GetNumTrees(void) { return m_nTrees; };
 
-		void Test(std::shared_ptr<AbstractDataPoint> DataPointPtr, std::shared_ptr<S> ForestLeafStats)
+		void Test(std::shared_ptr<AbstractDataPoint> DataPointPtr, std::shared_ptr<S> ForestLeafStats, std::shared_ptr<R> LeafData = nullptr)
 		{
-			// TODO: Handle arbitrary leaf data
 			for (int i = 0; i < m_nTrees; ++i)
-				ForestLeafStats->Merge(m_Trees[i]->Test(DataPointPtr));
+			{
+				if (LeafData != nullptr)
+				{
+					std::shared_ptr<R> TreeLeafData = std::make_shared<R>();
+					auto Stats = m_Trees[i]->Test(DataPointPtr, TreeLeafData);
+
+					ForestLeafStats->Merge(Stats);
+					LeafData->Merge(TreeLeafData);
+				}
+				else
+					ForestLeafStats->Merge(m_Trees[i]->Test(DataPointPtr));
+			}
 		};
 
 		void Serialize(std::ostream& OutputStream) const

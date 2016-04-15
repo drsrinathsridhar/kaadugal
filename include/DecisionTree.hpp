@@ -82,25 +82,33 @@ namespace Kaadugal
 		const int& GetNumNodes(void) { return m_NumNodes; };
 		const int& GetMaxDecisionLevels(void) { return m_MaxDecisionLevels; };
 
-		const std::shared_ptr<S> Test(std::shared_ptr<AbstractDataPoint> DataPointPtr)
+		const std::shared_ptr<S> Test(std::shared_ptr<AbstractDataPoint> DataPointPtr, std::shared_ptr<R> LeafData = nullptr)
 		{
-			// TODO: Handle arbitrary leaf data
 			if (isValid() == false)
 				std::cout << "[ WARN ]: This tree is invalid. Cannot test data point." << std::endl;
 
+			// Stats
 			S TreeLeafStats;
-			TestRecursive(DataPointPtr, 0, TreeLeafStats);
+			int LeafNodeIdx = TestRecursive(DataPointPtr, 0, TreeLeafStats);
+			
+			// Leaf data
+			if (LeafData != nullptr)
+			{
+				R TreeLeafData = m_Nodes[LeafNodeIdx].GetLeafData();
+				LeafData->Merge(std::make_shared<R>(TreeLeafData));
+			}
 
 			return std::make_shared<S>(TreeLeafStats);
 		};
 
-		void TestRecursive(const std::shared_ptr<AbstractDataPoint>& DataPointPtr, int NodeIndex, S& TreeLeafStats)
+		int TestRecursive(const std::shared_ptr<AbstractDataPoint>& DataPointPtr, int NodeIndex, S& TreeLeafStats)
 		{
 			if (m_Nodes[NodeIndex].GetType() == Kaadugal::NodeType::LeafNode) // Termination condition
 			{
 				//std::cout << "Terminating NodeIndex: " << NodeIndex << std::endl;
 				TreeLeafStats = m_Nodes[NodeIndex].GetStatistics();
-				return;
+
+				return NodeIndex;
 			}
 
 			// std::cout << "Response: " << m_Nodes[NodeIndex].GetFeatureResponse().GetResponse(DataPointPtr) << std::endl;

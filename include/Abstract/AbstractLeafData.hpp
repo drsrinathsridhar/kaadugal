@@ -25,5 +25,7 @@ namespace Kaadugal
 
 		// Member that constructs leaf data based on whatever logic. Takes dataset index as input
 		virtual void Construct(std::shared_ptr<DataSetIndex> LeafDataSetIdx) {};
+
+		virtual void Merge(std::shared_ptr<AbstractLeafData> Other) {};
 	};
 } // namespace Kaadugal

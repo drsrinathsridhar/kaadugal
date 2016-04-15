@@ -1,5 +1,4 @@
-#ifndef _DECISIONNODE_HPP_
-#define _DECISIONNODE_HPP_
+#pragma once
 
 #include <limits>
 #include <cmath>
@@ -100,5 +99,3 @@ namespace Kaadugal
 		};
 	};
 } // namespace Kaadugal
-
-#endif // _DECISIONNODE_HPP_
