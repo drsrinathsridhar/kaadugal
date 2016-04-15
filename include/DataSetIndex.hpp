@@ -39,7 +39,6 @@ namespace Kaadugal
 		std::shared_ptr<AbstractDataSet> GetDataSet(void) { return m_BaseDataSet; };
 		const std::vector<int>& GetIndex(void) { return m_Index; };
 	};
-
 } // namespace Kaadugal
 
 #endif // _DATASETINDEX_HPP_

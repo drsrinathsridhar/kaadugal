@@ -50,18 +50,22 @@ public:
 		return m_y;
 	};
 
-	// virtual void Serialize(std::ostream& OutputStream) override
-	// {
-	// 	OutputStream.write((const char *)(&m_x), sizeof(Kaadugal::VPFloat));
-	// 	OutputStream.write((const char *)(&m_y), sizeof(Kaadugal::VPFloat));
-	// 	OutputStream.write((const char *)(&m_Value), sizeof(int));
-	// };
-	// virtual void Deserialize(std::istream& InputStream) override
-	// {
-	// 	InputStream.read((char *)(&m_x), sizeof(Kaadugal::VPFloat));
-	// 	InputStream.read((char *)(&m_y), sizeof(Kaadugal::VPFloat));
-	// 	InputStream.read((char *)(&m_Value), sizeof(int));
-	// };
+	 virtual void Serialize(std::ostream& OutputStream) const override
+	 {
+	 	//OutputStream.write((const char *)(&m_x), sizeof(Kaadugal::VPFloat));
+	 	//OutputStream.write((const char *)(&m_y), sizeof(Kaadugal::VPFloat));
+	 	//OutputStream.write((const char *)(&m_Value), sizeof(int));
+
+		 std::cout << "[ WARN ]: Serialize() - Not yet implemented." << std::endl;
+	 };
+	 virtual void Deserialize(std::istream& InputStream) override
+	 {
+	 	//InputStream.read((char *)(&m_x), sizeof(Kaadugal::VPFloat));
+	 	//InputStream.read((char *)(&m_y), sizeof(Kaadugal::VPFloat));
+	 	//InputStream.read((char *)(&m_Value), sizeof(int));
+
+		std::cout << "[ WARN ]: Deserialize() - Not yet implemented." << std::endl;
+	 };
 };
 
 class PointSet2DRegress : public Kaadugal::AbstractDataSet

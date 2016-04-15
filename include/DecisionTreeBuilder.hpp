@@ -151,11 +151,8 @@ namespace Kaadugal
 			if (DataSetSize < std::max(3, m_Parameters.m_MinDataSetSize))
 			{
 				//std::cout << "[ INFO ]: Fewer than 2 data points in reached this node. Making leaf node..." << std::endl;
-				m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
-				uint64_t NodeEndTime = GetCurrentEpochTime();
-				m_TreeLevelTimes[CurrentNodeDepth] += NodeEndTime - NodeStartTime;
-				m_NumLeafNodes++;
+				MakeLeafNode(ParentNodeStats, NodeIndex, NodeStartTime, CurrentNodeDepth, PartitionedDataSetIdx);
 
 				return true;
 			}
@@ -163,11 +160,8 @@ namespace Kaadugal
 			if (CurrentNodeDepth >= m_Tree->GetMaxDecisionLevels()) // Both are zero-indexed
 			{
 				//std::cout << "[ INFO ]: Terminating splitting at maximum tree depth." << std::endl;
-				m_Tree->GetNode(NodeIndex).MakeLeafNode(ParentNodeStats); // Leaf node can be "endowed" with arbitrary data. TODO: Need to handle arbitrary leaf data
 				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
-				uint64_t NodeEndTime = GetCurrentEpochTime();
-				m_TreeLevelTimes[CurrentNodeDepth] += NodeEndTime - NodeStartTime;
-				m_NumLeafNodes++;
+				MakeLeafNode(ParentNodeStats, NodeIndex, NodeStartTime, CurrentNodeDepth, PartitionedDataSetIdx);
 
 				return true;
 			}
@@ -283,7 +277,7 @@ namespace Kaadugal
 			{
 				//std::cout << "[ INFO ]: No gain or very small gain (" << OptObjVal << ") for all splitting candidates. Making leaf node..." << std::endl;
 				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
-				MakeLeafNode(ParentNodeStats, NodeIndex, CurrentNodeDepth, PartitionedDataSetIdx);
+				MakeLeafNode(ParentNodeStats, NodeIndex, CurrentNodeDepth, NodeStartTime, PartitionedDataSetIdx);
 
 				return true;
 			}
@@ -306,10 +300,10 @@ namespace Kaadugal
 			return Success;
 		};
 
-		void MakeLeafNode(S& NodeStats, int NodeIndex, int CurrentNodeDepth, std::shared_ptr<DataSetIndex> LeafDataSetIdx)
+		void MakeLeafNode(S& NodeStats, int NodeIndex, int CurrentNodeDepth, uint64_t NodeStartTime, std::shared_ptr<DataSetIndex> LeafDataSetIdx)
 		{
 			R LeafData;
-			LeafData.Construct(LeafDataSetIdx);
+			LeafData.Construct(LeafDataSetIdx); // Construct arbitrary leaf data
 			m_Tree->GetNode(NodeIndex).MakeLeafNode(NodeStats, LeafData); // Leaf node can be "endowed" with arbitrary data
 			uint64_t NodeEndTime = GetCurrentEpochTime();
 			m_TreeLevelTimes[CurrentNodeDepth] += NodeEndTime - NodeStartTime;

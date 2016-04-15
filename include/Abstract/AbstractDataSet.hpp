@@ -11,7 +11,7 @@ namespace Kaadugal
 	{
 	public:
 		virtual ~AbstractDataPoint(void) {};
-		virtual void Serialize(std::ostream& OutputStream) = 0;
+		virtual void Serialize(std::ostream& OutputStream) const = 0;
 		virtual void Deserialize(std::istream& InputStream) = 0;
 	};
 

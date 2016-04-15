@@ -11,7 +11,8 @@
 // This class stores the leaf node stats
 // These are namely: covariance of 2D position (X, Y)
 // NOTE: We use cv::Mat for matrix-vector arithmetic
-class GaussianStats : public Kaadugal::AbstractStatistics
+class GaussianStats
+	: public Kaadugal::AbstractStatistics
 {
 protected:
 	// NOTE: If new members are added, remember to add them to serialize/deserialize
@@ -44,7 +45,7 @@ public:
 		m_CovarianceMatrix = cv::Mat();
 	};
 
-	virtual void Serialize(std::ostream& OutputStream) override
+	virtual void Serialize(std::ostream& OutputStream) const override
 	{
 		OutputStream.write((const char *)(&m_nParams), sizeof(int));
 		OutputStream.write((const char *)(&m_nDataPoints), sizeof(int));
@@ -175,9 +176,13 @@ public:
 		if (DerivedOtherStats == nullptr)
 			throw std::runtime_error("Incoming statistics is null. Please check input. Exiting.");
 
-		m_nDataPoints += DerivedOtherStats->GetNumDataPoints();
-		m_MeanParams.at<float>(0, 0) += DerivedOtherStats->GetMeanParams().at<float>(0, 0);
-		m_MeanParams.at<float>(0, 0) /= 2.0;
+		auto IncNumDataPoints = DerivedOtherStats->GetNumDataPoints();
+		auto CurrNumDataPoints = m_nDataPoints;
+		m_MeanParams.at<float>(0, 0) = m_MeanParams.at<float>(0, 0) * float(CurrNumDataPoints) + DerivedOtherStats->GetMeanParams().at<float>(0, 0) * float(IncNumDataPoints);
+		m_nDataPoints += IncNumDataPoints;
+
+		m_MeanParams.at<float>(0, 0) /= float(m_nDataPoints);
+
 
 		m_isAggregated = true;
 	};
