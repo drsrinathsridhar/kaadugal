@@ -211,6 +211,8 @@ namespace Kaadugal
 					}
 				}
 
+				//if (LocObjVal < 0.0)
+				//	std::cout << "NumThresholds: " << NumThresholds << std::endl;
 				ObjValAccum[i] = LocObjVal;
 				OptParamsStructAccum[i] = LocObjValStruct;
 			}
@@ -229,11 +231,17 @@ namespace Kaadugal
 				}
 			}
 
-			if (OptObjVal < 0.0)
-			{
-				//std::cout << "RUNTIME ERROR in BuildTreeDepthFirst()" << std::endl; // For windows
-				throw std::runtime_error("Optimum objective value is negative. Cannot proceed.");
-			}
+			//if (OptObjVal < 0.0)
+			//{
+			//	std::cout << "RUNTIME ERROR in BuildTreeDepthFirst() - OptObjVal is negative." << std::endl; // For windows
+			//	//std::cout << "Number of data points at this leaf: " << DataSetSize << std::endl;
+			//	//std::cout << "m_Parameters.m_NumCandidateFeatures: " << m_Parameters.m_NumCandidateFeatures << std::endl;
+			//	//std::cout << "ObjVal Accumulator: " << std::endl;
+			//	//for (int ii = 0; ii < AccumSize; ++ii)
+			//	//	std::cout << ObjValAccum[ii] << ", ";
+			//	//std::cout << std::endl;
+			//	throw std::runtime_error("Optimum objective value is negative. Cannot proceed.");
+			//}
 
 			std::vector<VPFloat> DataResponses(DataSetSize);
 #pragma omp parallel for
@@ -272,7 +280,7 @@ namespace Kaadugal
 			// }
 
 			// Check for recursion termination conditions
-			// No gain or very small gain
+			// No gain, very small gain, or negative gain means we terminate
 			if (OptObjVal == 0.0 || OptObjVal < m_Parameters.m_MinGain)
 			{
 				//std::cout << "[ INFO ]: No gain or very small gain (" << OptObjVal << ") for all splitting candidates. Making leaf node..." << std::endl;
@@ -553,7 +561,6 @@ namespace Kaadugal
 			if (Quantiles[0] == Quantiles[Quantiles.size() - 1])
 				return std::vector<VPFloat>(); // Looks like samples were all the same. This is bad
 
-
 			// Compute n candidate thresholds by sampling in between n+1 approximate quantiles
 			std::uniform_real_distribution<VPFloat> UniRealDist(0, 1); // [0, 1), NOTE the exclusive end
 			int NumThresholds = Thresholds.size();
@@ -569,7 +576,7 @@ namespace Kaadugal
 
 		VPFloat GetObjectiveValue(S& ParentStats, S& LeftStats, S& RightStats)
 		{
-			if (ParentStats.GetNumDataPoints() < m_Parameters.m_MinDataSetSize)
+			if (ParentStats.GetNumDataPoints() < std::max(3, m_Parameters.m_MinDataSetSize))
 			{
 				std::cout << "RUNTIME ERROR in GetObjectiveValue()" << std::endl; // For windows
 				throw std::runtime_error("ParentStats should never contain so little data points. Cannot proceed with training.");
@@ -585,10 +592,24 @@ namespace Kaadugal
 			// Change this and use a template/abstract class, if needed
 			// See any of the Shotton et al. papers for this definition
 			VPFloat InformationGain = ParentStats.GetEntropy()
-				- (VPFloat(LeftStats.GetNumDataPoints())  * LeftStats.GetEntropy()
-				+ VPFloat(RightStats.GetNumDataPoints()) * RightStats.GetEntropy()) / VPFloat(ParentStats.GetNumDataPoints());
+				- (
+					VPFloat(LeftStats.GetNumDataPoints())  * LeftStats.GetEntropy()
+					+ VPFloat(RightStats.GetNumDataPoints()) * RightStats.GetEntropy()
+				  ) / VPFloat(ParentStats.GetNumDataPoints());
 
 			//std::cout << "InfoGain: " << InformationGain << std::endl;
+
+			//if (InformationGain < 0.0)
+			//{
+			//	std::cout << "AHEM, NO THIS SHOULD NOT HAPPEN. InfoGain: " << InformationGain << std::endl;
+			//	std::cout << "Parent nPoints: " << ParentStats.GetNumDataPoints() << std::endl;
+			//	std::cout << "Left nPoints: " << LeftStats.GetNumDataPoints() << std::endl;
+			//	std::cout << "Right nPoints: " << RightStats.GetNumDataPoints() << std::endl;
+
+			//	std::cout << "Parent Entropy: " << ParentStats.GetEntropy() << std::endl;
+			//	std::cout << "Left Entropy: " << LeftStats.GetEntropy() << std::endl;
+			//	std::cout << "Right Entropy: " << RightStats.GetEntropy() << std::endl;
+			//}
 
 			return InformationGain;
 		};
