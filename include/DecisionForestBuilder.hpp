@@ -11,6 +11,14 @@
 
 namespace Kaadugal
 {
+	// Data sampling enum
+	enum TreeDataSamplingType
+	{
+		UniformPartition, // Split data uniformly between trees
+		Constant, // All trees see all the data
+		Bagging, // For data of size N, all trees get N samples but are chosen with replacement
+	};
+
 	// T: AbstractFeatureResponse which is the feature response function or weak learner
 	// S: AbstractStatistics which contains some statistics about node from training
 	// R: AbstractLeafData, arbitrary data stored if this is a leaf node
@@ -44,27 +52,62 @@ namespace Kaadugal
 			// for(int i = 0; i < SetSize; ++i)
 			// 	std::cout << Indices[i] << std::endl;
 
-			int NumSubsets = m_Parameters.m_NumTrees;
-			int SubsetSize = SetSize / NumSubsets;
-			int Remainder = SetSize % NumSubsets;
-			int RemCtr = 0;
-			for (int i = 0; i < NumSubsets; ++i)
+			Kaadugal::TreeDataSamplingType SamplType = TreeDataSamplingType::Bagging;
+
+			if (SamplType == TreeDataSamplingType::UniformPartition)
 			{
-				std::vector<int> SubIdx;
-				for (int j = 0; j < SubsetSize; ++j)
-					SubIdx.push_back(Indices[i*SubsetSize + j]);
-
-				if (RemCtr != Remainder) // Let's distribute the remainder evenly to the first k (k = Remainder) trees
+				std::cout << "[ INFO ]: Uniformly splitting data between trees." << std::endl;
+				// OPTION 1: Evenly split the data among the trees
+				int NumSubsets = m_Parameters.m_NumTrees;
+				int SubsetSize = SetSize / NumSubsets;
+				int Remainder = SetSize % NumSubsets;
+				int RemCtr = 0;
+				for (int i = 0; i < NumSubsets; ++i)
 				{
-					SubIdx.push_back(Indices[NumSubsets*SubsetSize + RemCtr]);
-					RemCtr++;
+					std::vector<int> SubIdx;
+					for (int j = 0; j < SubsetSize; ++j)
+						SubIdx.push_back(Indices[i*SubsetSize + j]);
+
+					if (RemCtr != Remainder) // Let's distribute the remainder evenly to the first k (k = Remainder) trees
+					{
+						SubIdx.push_back(Indices[NumSubsets*SubsetSize + RemCtr]);
+						RemCtr++;
+					}
+
+					// for(int i = 0; i < SubIdx.size(); ++i)
+					//     std::cout << SubIdx[i] << std::endl;
+					// std::cout << std::endl;
+
+					m_DataSubsetsIdx.push_back(std::make_shared<DataSetIndex>(DataSetIndex(m_DataSet, SubIdx)));
 				}
+			}
+			else if (SamplType == TreeDataSamplingType::Constant)
+			{
+				std::cout << "[ INFO ]: Passing all data to all trees." << std::endl;
+				// OPTION 2: Pass all the data to all the trees and let randomness take care
+				int NumSubsets = m_Parameters.m_NumTrees;
+				for (int i = 0; i < NumSubsets; ++i)
+				{
+					std::vector<int> SubIdx = Indices;
+					std::shuffle(SubIdx.begin(), SubIdx.end(), Randomizer::Get().GetRNG()); // Shuffle just to be sure
 
-				// for(int i = 0; i < SubIdx.size(); ++i)
-				//     std::cout << SubIdx[i] << std::endl;
-				// std::cout << std::endl;
+					m_DataSubsetsIdx.push_back(std::make_shared<DataSetIndex>(DataSetIndex(m_DataSet, SubIdx)));
+				}
+			}
+			else if (SamplType == TreeDataSamplingType::Bagging)
+			{
+				std::cout << "[ INFO ]: Using bagging to split data between trees." << std::endl;
+				// OPTION 3: Perform bagging with each tree getting SetSize bootstrap samples (i.e. sampled with replacement)
+				int NumSubsets = m_Parameters.m_NumTrees;
+				int SubsetSize = SetSize;
+				for (int i = 0; i < NumSubsets; ++i)
+				{
+					std::vector<int> SubIdx;
+					for (int j = 0; j < SubsetSize; ++j)
+						SubIdx.push_back(Randomizer::GetRandomElement<int>(Indices)); // Random sampling *with* replacement
 
-				m_DataSubsetsIdx.push_back(std::make_shared<DataSetIndex>(DataSetIndex(m_DataSet, SubIdx)));
+					m_DataSubsetsIdx.push_back(std::make_shared<DataSetIndex>(DataSetIndex(m_DataSet, SubIdx)));
+				}
 			}
 		};
 
