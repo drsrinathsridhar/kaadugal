@@ -71,9 +71,15 @@ namespace Kaadugal
 			InputStream.read((char *)(&m_MaxDecisionLevels), sizeof(int));
 			InputStream.read((char *)(&m_NumNodes), sizeof(int));
 			// NOTE: Will crash if this exceeds available system memory
+			int nLeaves = 0;
 			m_Nodes.resize(m_NumNodes);
 			for (int i = 0; i < m_NumNodes; ++i)
+			{
 				m_Nodes[i].Deserialize(InputStream);
+				if (m_Nodes[i].GetType() == Kaadugal::LeafNode)
+					nLeaves++;
+			}
+			//std::cout << "Number of leaves: " << nLeaves << std::endl;
 		};
 
 		const std::vector<DecisionNode<T, S, R>>& GetAllNodes(void) { return m_Nodes; };
