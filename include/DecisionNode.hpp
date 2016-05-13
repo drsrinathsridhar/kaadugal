@@ -86,11 +86,11 @@ namespace Kaadugal
 			m_Data = Data; // Deep copy
 		};
 
-		const R& GetLeafData(void) { return m_Data; };
-		const S& GetStatistics(void) { return m_Statistics; };
+		const R& GetLeafData(void) const { return m_Data; };
+		const S& GetStatistics(void) const { return m_Statistics; };
 		T& GetFeatureResponse(void) { return m_FeatureResponse; };
-		const VPFloat& GetThreshold(void) { return m_Threshold; };
-		const Kaadugal::NodeType& GetType(void) { return m_Type; };
+		const VPFloat& GetThreshold(void) const { return m_Threshold; };
+		const Kaadugal::NodeType& GetType(void) const { return m_Type; };
 
 		// Render methods for visualizing node
 		virtual void Render(void)

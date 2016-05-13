@@ -62,8 +62,14 @@ namespace Kaadugal
 		{
 			OutputStream.write((const char *)(&m_MaxDecisionLevels), sizeof(int));
 			OutputStream.write((const char *)(&m_NumNodes), sizeof(int));
+			int nLeaves = 0;
 			for (int i = 0; i < m_NumNodes; ++i)
+			{
 				m_Nodes[i].Serialize(OutputStream);
+				if (m_Nodes[i].GetType() == Kaadugal::LeafNode)
+					nLeaves++;
+			}
+			//std::cout << "Number of leaves: " << nLeaves << std::endl;
 		};
 
 		void Deserialize(std::istream& InputStream)
@@ -112,6 +118,7 @@ namespace Kaadugal
 			if (m_Nodes[NodeIndex].GetType() == Kaadugal::NodeType::LeafNode) // Termination condition
 			{
 				//std::cout << "Terminating NodeIndex: " << NodeIndex << std::endl;
+				//std::cout << "Terminating tree depth: " << log(NodeIndex) / log(2.0) << std::endl;
 				TreeLeafStats = m_Nodes[NodeIndex].GetStatistics();
 
 				return NodeIndex;
