@@ -32,7 +32,7 @@ namespace Kaadugal
 
 		void Test(std::shared_ptr<AbstractDataPoint> DataPointPtr, std::shared_ptr<S> ForestLeafStats, std::shared_ptr<R> LeafData = nullptr)
 		{
-			for (int i = 0; i < 2/*m_nTrees*/; ++i)
+			for (int i = 0; i < m_nTrees; ++i)
 			{
 				if (LeafData != nullptr)
 				{

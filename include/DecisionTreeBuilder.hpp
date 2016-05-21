@@ -137,13 +137,11 @@ namespace Kaadugal
 				m_ReachedMaxDepth = CurrentNodeDepth;
 				std::cout << CurrentNodeDepth << " " << std::flush;
 			}
-
 			// Start time for node time computation
 			uint64_t NodeStartTime = GetCurrentEpochTime();
 
 			S ParentNodeStats(PartitionedDataSetIdx);
 			int DataSetSize = PartitionedDataSetIdx->Size();
-			// std::cout << ParentNodeStats.GetNumDataPoints() << std::endl;
 			// std::cout << ParentNodeStats.GetProbability(0) << std::endl;
 
 			// Check if incoming data is fewer than 3 data points. If so then just create a leaf node

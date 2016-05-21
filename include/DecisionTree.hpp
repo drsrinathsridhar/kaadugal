@@ -85,7 +85,7 @@ namespace Kaadugal
 				if (m_Nodes[i].GetType() == Kaadugal::LeafNode)
 					nLeaves++;
 			}
-			//std::cout << "Number of leaves: " << nLeaves << std::endl;
+			std::cout << "Number of leaves: " << nLeaves << std::endl;
 		};
 
 		const std::vector<DecisionNode<T, S, R>>& GetAllNodes(void) { return m_Nodes; };
