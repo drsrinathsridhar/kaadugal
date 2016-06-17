@@ -126,6 +126,7 @@ namespace Kaadugal
 
 			// std::cout << "Response: " << m_Nodes[NodeIndex].GetFeatureResponse().GetResponse(DataPointPtr) << std::endl;
 			// std::cout << "Threshold: " << m_Nodes[NodeIndex].GetThreshold() << std::endl << std::endl;
+			//m_Nodes[NodeIndex].GetFeatureResponse().Special();
 			if (m_Nodes[NodeIndex].GetFeatureResponse().GetResponse(DataPointPtr) > m_Nodes[NodeIndex].GetThreshold()) // Go left. This is same logic as in Tree builder, partition
 				return TestRecursive(DataPointPtr, 2 * NodeIndex + 1, TreeLeafStats);
 

@@ -150,6 +150,7 @@ namespace Kaadugal
 			{
 				//std::cout << "[ INFO ]: Fewer than 2 data points in reached this node. Making leaf node..." << std::endl;
 				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
+				ParentNodeStats.Special();
 				MakeLeafNode(ParentNodeStats, NodeIndex, CurrentNodeDepth, NodeStartTime, PartitionedDataSetIdx);
 
 				return true;
@@ -159,6 +160,7 @@ namespace Kaadugal
 			{
 				//std::cout << "[ INFO ]: Terminating splitting at maximum tree depth." << std::endl;
 				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
+				ParentNodeStats.Special();
 				MakeLeafNode(ParentNodeStats, NodeIndex, CurrentNodeDepth, NodeStartTime, PartitionedDataSetIdx);
 
 				return true;
@@ -246,6 +248,8 @@ namespace Kaadugal
 			for (int k = 0; k < DataSetSize; ++k)
 				DataResponses[k] = OptFeatureResponse.GetResponse(PartitionedDataSetIdx->GetDataPoint(k));
 
+			//OptFeatureResponse.Special();
+
 			std::pair<std::shared_ptr<DataSetIndex>, std::shared_ptr<DataSetIndex>> Subsets = Partition(PartitionedDataSetIdx, DataResponses, OptThreshold);
 			S LeftNodeStats(Subsets.first);
 			S RightNodeStats(Subsets.second);
@@ -283,6 +287,7 @@ namespace Kaadugal
 			{
 				//std::cout << "[ INFO ]: No gain or very small gain (" << OptObjVal << ") for all splitting candidates. Making leaf node..." << std::endl;
 				PartitionedDataSetIdx->GetDataSet()->Special(NodeIndex, PartitionedDataSetIdx->GetIndex());
+				ParentNodeStats.Special();
 				MakeLeafNode(ParentNodeStats, NodeIndex, CurrentNodeDepth, NodeStartTime, PartitionedDataSetIdx);
 
 				return true;

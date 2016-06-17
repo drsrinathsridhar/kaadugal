@@ -23,6 +23,7 @@ namespace Kaadugal
 			{
 				std::random_device SeedDevice;
 				m_RandEngines.push_back(std::mt19937(SeedDevice()));
+				//m_RandEngines.push_back(std::mt19937((unsigned)0));
 			}
 		};
 		// You want to make sure they
@@ -58,3 +59,4 @@ namespace Kaadugal
 } // namespace Kaadugal
 
 #endif // _RANDOMIZER_HPP_
+
