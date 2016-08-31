@@ -94,6 +94,20 @@ namespace Kaadugal
 		const int& GetNumNodes(void) { return m_NumNodes; };
 		const int& GetMaxDecisionLevels(void) { return m_MaxDecisionLevels; };
 
+		void SetNumNodes(int NumNodes)
+		{
+			if (m_Nodes.size() > 1)
+				throw std::runtime_error("Cannot set nodes on a non-empty tree.");
+			
+			m_NumNodes = NumNodes;
+			m_Nodes.resize(m_NumNodes);			
+		};
+		void SetMaxDecisionLevels(int MaxDecisionLevels) { m_MaxDecisionLevels = MaxDecisionLevels; };
+		void SetNode(int i, DecisionNode<T, S, R>& Node)
+		{
+			m_Nodes[i] = Node;
+		};
+
 		const std::shared_ptr<S> Test(std::shared_ptr<AbstractDataPoint> DataPointPtr, std::shared_ptr<R> LeafData = nullptr)
 		{
 			if (isValid() == false)

@@ -41,7 +41,7 @@ namespace Kaadugal
 
 		};
 
-		DecisionNode<T, S, R>& operator=(const DecisionNode<T, S, R>& RHS)
+		void operator=(const DecisionNode<T, S, R>& RHS)
 		{
 			m_Threshold = RHS.m_Threshold;
 			m_FeatureResponse = RHS.m_FeatureResponse;
