@@ -129,6 +129,13 @@ namespace Kaadugal
 
 		int TestRecursive(const std::shared_ptr<AbstractDataPoint>& DataPointPtr, int NodeIndex, S& TreeLeafStats)
 		{
+			//// Sanity check
+			//if (m_Nodes[NodeIndex].GetType() == Kaadugal::NodeType::Invalid) // Termination condition
+			//{
+			//	std::cout << "Invalid node reached. This should never happen." << std::endl;
+			//	throw std::runtime_error("Invalid node reached. This should never happen.");
+			//}
+
 			if (m_Nodes[NodeIndex].GetType() == Kaadugal::NodeType::LeafNode) // Termination condition
 			{
 				//std::cout << "Terminating NodeIndex: " << NodeIndex << std::endl;

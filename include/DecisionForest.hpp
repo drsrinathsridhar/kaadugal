@@ -28,7 +28,12 @@ namespace Kaadugal
 			m_nTrees = m_Trees.size();
 		};
 
-		int GetNumTrees(void) { return m_nTrees; };
+		const std::shared_ptr<DecisionTree<T, S, R>> GetTree(int i) const
+		{
+			return m_Trees[i];
+		};
+
+		int GetNumTrees(void) const { return m_nTrees; };
 
 		void Test(std::shared_ptr<AbstractDataPoint> DataPointPtr, std::shared_ptr<S> ForestLeafStats, std::shared_ptr<R> LeafData = nullptr)
 		{
