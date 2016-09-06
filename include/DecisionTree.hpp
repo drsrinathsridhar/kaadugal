@@ -99,10 +99,34 @@ namespace Kaadugal
 			if (isValid() == false)
 				std::cout << "[ WARN ]: This tree is invalid. Cannot test data point." << std::endl;
 
-			// Stats
-			S TreeLeafStats;
-			int LeafNodeIdx = TestRecursive(DataPointPtr, 0, TreeLeafStats);
-			
+			//// ------------
+			//// Recursion, could be slow
+			//// ------------
+			// S TreeLeafStats;
+			//int LeafNodeIdx = TestRecursive(DataPointPtr, 0, TreeLeafStats);
+
+			// Iteration
+			int LeafNodeIdx = 0;
+			//while (m_Nodes[LeafNodeIdx].GetType() == Kaadugal::NodeType::SplitNode)
+			while (m_Nodes[LeafNodeIdx].GetType() != Kaadugal::NodeType::LeafNode)
+			//for (int i = 0; i < m_MaxDecisionLevels, m_Nodes[LeafNodeIdx].GetType() != Kaadugal::NodeType::LeafNode; ++i)
+			//for (int i = 0; i < 21; ++i)
+			{
+				// Avoid branch misprediction by removing if condition
+				bool isGoLeft = m_Nodes[LeafNodeIdx].GetFeatureResponse().GetResponse(DataPointPtr) > m_Nodes[LeafNodeIdx].GetThreshold();
+				LeafNodeIdx = isGoLeft ? (2 * LeafNodeIdx + 1) : (2 * LeafNodeIdx + 2);
+
+				//Kaadugal::VPFloat blah = m_Nodes[0].GetFeatureResponse().GetResponse(DataPointPtr);
+				//bool isGoLeft = 1 > 2;// m_Nodes[0].GetFeatureResponse().GetResponse(DataPointPtr) > m_Nodes[0].GetThreshold();
+				//int tmpLeafNodeIdx = isGoLeft ? (2 * LeafNodeIdx + 1) : (2 * LeafNodeIdx + 2);
+			}
+
+			//return;
+
+			//std::cout << "Terminating NodeIndex: " << LeafNodeIdx << std::endl;
+			//std::cout << "Terminating tree depth: " << log(LeafNodeIdx) / log(2.0) << std::endl;
+			std::shared_ptr<S> TreeLeafStatsPtr = std::make_shared<S>(m_Nodes[LeafNodeIdx].GetStatistics());
+
 			// Leaf data
 			if (LeafData != nullptr)
 			{
@@ -110,7 +134,7 @@ namespace Kaadugal
 				LeafData->Merge(std::make_shared<R>(TreeLeafData));
 			}
 
-			return std::make_shared<S>(TreeLeafStats);
+			return TreeLeafStatsPtr;
 		};
 
 		int TestRecursive(const std::shared_ptr<AbstractDataPoint>& DataPointPtr, int NodeIndex, S& TreeLeafStats)
@@ -129,7 +153,7 @@ namespace Kaadugal
 			if (m_Nodes[NodeIndex].GetFeatureResponse().GetResponse(DataPointPtr) > m_Nodes[NodeIndex].GetThreshold()) // Go left. This is same logic as in Tree builder, partition
 				return TestRecursive(DataPointPtr, 2 * NodeIndex + 1, TreeLeafStats);
 
-				return TestRecursive(DataPointPtr, 2 * NodeIndex + 2, TreeLeafStats);
+			return TestRecursive(DataPointPtr, 2 * NodeIndex + 2, TreeLeafStats);
 		};
 
 		// Return the node index for the leaf or the first invalid node reached by the data point

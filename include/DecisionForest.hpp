@@ -43,7 +43,11 @@ namespace Kaadugal
 					LeafData->Merge(TreeLeafData);
 				}
 				else
+				{
 					ForestLeafStats->Merge(m_Trees[i]->Test(DataPointPtr));
+				}
+
+				//m_Trees[i]->Test(DataPointPtr);
 			}
 		};
 

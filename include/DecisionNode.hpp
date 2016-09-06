@@ -90,7 +90,7 @@ namespace Kaadugal
 		const S& GetStatistics(void) const { return m_Statistics; };
 		T& GetFeatureResponse(void) { return m_FeatureResponse; };
 		const VPFloat& GetThreshold(void) const { return m_Threshold; };
-		const Kaadugal::NodeType& GetType(void) const { return m_Type; };
+		Kaadugal::NodeType GetType(void) const { return m_Type; };
 
 		// Render methods for visualizing node
 		virtual void Render(void)
