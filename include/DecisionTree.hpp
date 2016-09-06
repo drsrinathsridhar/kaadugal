@@ -108,7 +108,7 @@ namespace Kaadugal
 			m_Nodes[i] = Node;
 		};
 
-		const std::shared_ptr<S> Test(std::shared_ptr<AbstractDataPoint> DataPointPtr, std::shared_ptr<R> LeafData = nullptr)
+		const std::shared_ptr<S> Test(const std::shared_ptr<AbstractDataPoint>& DataPointPtr, std::shared_ptr<R> LeafData = nullptr)
 		{
 			if (isValid() == false)
 				std::cout << "[ WARN ]: This tree is invalid. Cannot test data point." << std::endl;
@@ -121,19 +121,21 @@ namespace Kaadugal
 
 			// Iteration
 			int LeafNodeIdx = 0;
-			//while (m_Nodes[LeafNodeIdx].GetType() == Kaadugal::NodeType::SplitNode)
 			while (m_Nodes[LeafNodeIdx].GetType() != Kaadugal::NodeType::LeafNode)
-			//for (int i = 0; i < m_MaxDecisionLevels, m_Nodes[LeafNodeIdx].GetType() != Kaadugal::NodeType::LeafNode; ++i)
-			//for (int i = 0; i < 21; ++i)
 			{
 				// Avoid branch misprediction by removing if condition
 				bool isGoLeft = m_Nodes[LeafNodeIdx].GetFeatureResponse().GetResponse(DataPointPtr) > m_Nodes[LeafNodeIdx].GetThreshold();
 				LeafNodeIdx = isGoLeft ? (2 * LeafNodeIdx + 1) : (2 * LeafNodeIdx + 2);
-
-				Kaadugal::VPFloat blah = m_Nodes[0].GetFeatureResponse().GetResponse(DataPointPtr);
-				//bool isGoLeft = 1 > 2;// m_Nodes[0].GetFeatureResponse().GetResponse(DataPointPtr) > m_Nodes[0].GetThreshold();
-				//int tmpLeafNodeIdx = isGoLeft ? (2 * LeafNodeIdx + 1) : (2 * LeafNodeIdx + 2);
 			}
+
+			//// OPTIMIZATION TESTS
+			//for (int i = 0; i < 21; ++i)
+			//{
+
+			//	//Kaadugal::VPFloat blah = m_Nodes[0].GetFeatureResponse().GetResponse(DataPointPtr);
+			//	bool isGoLeft = m_Nodes[0].GetFeatureResponse().GetResponse(DataPointPtr) > m_Nodes[0].GetThreshold();
+			//	int tmpLeafNodeIdx = isGoLeft ? (2 * LeafNodeIdx + 1) : (2 * LeafNodeIdx + 2);
+			//}
 
 			//return;
 

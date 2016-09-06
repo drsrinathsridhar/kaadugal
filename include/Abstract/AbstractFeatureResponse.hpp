@@ -12,7 +12,7 @@ namespace Kaadugal
 	class AbstractFeatureResponse
 	{
 	public:
-		virtual VPFloat GetResponse(std::shared_ptr<AbstractDataPoint> DataPoint) = 0;
+		virtual VPFloat GetResponse(const std::shared_ptr<AbstractDataPoint>& DataPoint) = 0;
 
 		virtual void Serialize(std::ostream& OutputStream) const = 0;
 		virtual void Deserialize(std::istream& InputStream) = 0;
