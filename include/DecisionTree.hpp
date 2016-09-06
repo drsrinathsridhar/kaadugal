@@ -130,7 +130,7 @@ namespace Kaadugal
 				bool isGoLeft = m_Nodes[LeafNodeIdx].GetFeatureResponse().GetResponse(DataPointPtr) > m_Nodes[LeafNodeIdx].GetThreshold();
 				LeafNodeIdx = isGoLeft ? (2 * LeafNodeIdx + 1) : (2 * LeafNodeIdx + 2);
 
-				//Kaadugal::VPFloat blah = m_Nodes[0].GetFeatureResponse().GetResponse(DataPointPtr);
+				Kaadugal::VPFloat blah = m_Nodes[0].GetFeatureResponse().GetResponse(DataPointPtr);
 				//bool isGoLeft = 1 > 2;// m_Nodes[0].GetFeatureResponse().GetResponse(DataPointPtr) > m_Nodes[0].GetThreshold();
 				//int tmpLeafNodeIdx = isGoLeft ? (2 * LeafNodeIdx + 1) : (2 * LeafNodeIdx + 2);
 			}
