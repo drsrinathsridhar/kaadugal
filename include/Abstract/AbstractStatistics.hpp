@@ -25,6 +25,11 @@ namespace Kaadugal
 		virtual bool isAggregated(void) { return m_isAggregated; };
 		virtual bool isValid(void) { return m_isValid; };
 
+		virtual void Special(void)
+		{
+
+		};
+
 	protected:
 		bool m_isAggregated;
 		bool m_isValid;

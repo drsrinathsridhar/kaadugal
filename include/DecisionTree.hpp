@@ -94,6 +94,20 @@ namespace Kaadugal
 		const int& GetNumNodes(void) { return m_NumNodes; };
 		const int& GetMaxDecisionLevels(void) { return m_MaxDecisionLevels; };
 
+		void SetNumNodes(int NumNodes)
+		{
+			if (m_Nodes.size() > 1)
+				throw std::runtime_error("Cannot set nodes on a non-empty tree.");
+			
+			m_NumNodes = NumNodes;
+			m_Nodes.resize(m_NumNodes);			
+		};
+		void SetMaxDecisionLevels(int MaxDecisionLevels) { m_MaxDecisionLevels = MaxDecisionLevels; };
+		void SetNode(int i, DecisionNode<T, S, R>& Node)
+		{
+			m_Nodes[i] = Node;
+		};
+
 		const std::shared_ptr<S> Test(std::shared_ptr<AbstractDataPoint> DataPointPtr, std::shared_ptr<R> LeafData = nullptr)
 		{
 			if (isValid() == false)
@@ -139,6 +153,13 @@ namespace Kaadugal
 
 		int TestRecursive(const std::shared_ptr<AbstractDataPoint>& DataPointPtr, int NodeIndex, S& TreeLeafStats)
 		{
+			//// Sanity check
+			//if (m_Nodes[NodeIndex].GetType() == Kaadugal::NodeType::Invalid) // Termination condition
+			//{
+			//	std::cout << "Invalid node reached. This should never happen." << std::endl;
+			//	throw std::runtime_error("Invalid node reached. This should never happen.");
+			//}
+
 			if (m_Nodes[NodeIndex].GetType() == Kaadugal::NodeType::LeafNode) // Termination condition
 			{
 				//std::cout << "Terminating NodeIndex: " << NodeIndex << std::endl;
@@ -150,6 +171,7 @@ namespace Kaadugal
 
 			// std::cout << "Response: " << m_Nodes[NodeIndex].GetFeatureResponse().GetResponse(DataPointPtr) << std::endl;
 			// std::cout << "Threshold: " << m_Nodes[NodeIndex].GetThreshold() << std::endl << std::endl;
+			//m_Nodes[NodeIndex].GetFeatureResponse().Special();
 			if (m_Nodes[NodeIndex].GetFeatureResponse().GetResponse(DataPointPtr) > m_Nodes[NodeIndex].GetThreshold()) // Go left. This is same logic as in Tree builder, partition
 				return TestRecursive(DataPointPtr, 2 * NodeIndex + 1, TreeLeafStats);
 
