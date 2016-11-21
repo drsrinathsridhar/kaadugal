@@ -3,7 +3,10 @@
 
 #include <memory>
 #include <ostream>
+#include <iostream>
 #include <istream>
+
+#include "KaadugalDefines.hpp"
 
 namespace Kaadugal
 {
