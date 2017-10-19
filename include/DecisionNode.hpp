@@ -3,7 +3,7 @@
 #include <limits>
 #include <cmath>
 #include <fstream>
-#include "Defines.hpp"
+#include "KaadugalDefines.hpp"
 
 namespace Kaadugal
 {

@@ -26,7 +26,7 @@ public:
 
 	int GetSelectedFeature(void) { return m_SelectedFeature; };
 
-	virtual Kaadugal::VPFloat GetResponse(std::shared_ptr<Kaadugal::AbstractDataPoint> DataPoint) override
+	virtual Kaadugal::VPFloat GetResponse(const std::shared_ptr<Kaadugal::AbstractDataPoint>& DataPoint) override
 	{
 		auto PointIn2D = std::dynamic_pointer_cast<Point2DRegress>(DataPoint);
 
